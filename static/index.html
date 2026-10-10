@@ -9,7 +9,7 @@
 *{margin:0;box-sizing:border-box;font-family:system-ui}
 body{background:#f0f6ff}
 .header{background:#0a3d9c;color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
-.header img{height:36px}
+.header img{height:40px;width:40px;border-radius:50%;object-fit:cover;border:2px solid #fff;background:#fff}
 .main{padding:14px;max-width:1100px;margin:auto}
 .search-box{display:flex;gap:8px;margin:12px 0}
 .search-box input{flex:1;padding:14px;border-radius:10px;border:1px solid #c5d5f0}
@@ -25,7 +25,7 @@ body{background:#f0f6ff}
 <body>
 <div class="header">
 <div style="display:flex;align-items:center;gap:10px">
-<img src="/static/logo.png" onerror="this.style.display='none'">
+<img src="/static/logo.png">
 <b>LONMA ORBIT</b>
 </div>
 <button class="btn" style="background:#fff;color:#0a3d9c" onclick="startScan()">📷 SCAN</button>
@@ -34,12 +34,10 @@ body{background:#f0f6ff}
 <div class="main">
 <div id="reader" style="display:none"></div>
 <div class="search-box">
-<input id="q" placeholder="Scan or search 5449000000996" oninput="filter(this.value)">
+<input id="q" placeholder="Scan or search" oninput="filter(this.value)">
 <button class="btn" onclick="startScan()">Scan</button>
 </div>
-
 <div class="grid" id="products"></div>
-
 <div class="cart">
 <h3>Cart - <span id="total">KES 0</span> <span id="cnt">0</span></h3>
 <div id="cart"></div>
