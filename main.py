@@ -61,3 +61,17 @@ def health(): return {"ok":True}
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+    from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
+# Mount static folder
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+def serve_website():
+    return FileResponse(os.path.join("static", "index.html"))
+
+# Your old API routes stay same
+@app.get("/api/health")
+def health(): return {"ok":True}
