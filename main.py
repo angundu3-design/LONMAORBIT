@@ -1,77 +1,75 @@
-from fastapi import FastAPI, HTTPException
+# main.py - LONMA ORBIT v2.3 - FIXED FOR RENDER
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import uvicorn, os
+import os
 
-app = FastAPI(title="LONMA ORBIT v2.3")
+app = FastAPI(title="LONMA ORBIT v2.3", version="2.3.0")
 
+# Allow frontend to call backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# In-memory DB (replace with Postgres later)
-products = [
-    {"id":1, "name":"Soda - Coca 500ml", "price":70, "stock":100, "barcode":"5449000000996"},
-    {"id":2, "name":"Bread - 400g", "price":65, "stock":50, "barcode":"6161100123"},
-]
-
-users = [{"username":"admin","password":"Lonma@2026","role":"admin"}]
-
-attendance = [
-    {"name":"Marlon Kikuyu Ang'undu", "days":26, "taken":7, "balance":14, "status":"Active"},
-    {"name":"Lavinah Boke Maroa", "days":26, "taken":21, "balance":0, "status":"Active"},
-    {"name":"Sarah Muhia Wanjiku", "days":9, "taken":17, "balance":7, "status":"On Leave"},
-]
-
-class ProductIn(BaseModel):
-    name: str
-    price: float
-    stock: int
-    barcode: str
-
-@app.get("/")
-def home(): return {"status":"LONMA ORBIT v2.3 LIVE","url":"https://app.lonmaorbit.co.ke"}
-
-@app.get("/api/products")
-def get_products(): return products
-
-@app.post("/api/products")
-def add_product(p: ProductIn):
-    products.append({**p.dict(), "id":len(products)+1})
-    return {"message":"Added","barcode":p.barcode}
-
-@app.get("/api/products/barcode/{code}")
-def get_by_barcode(code: str):
-    for prod in products:
-        if prod["barcode"] == code: return prod
-    raise HTTPException(404, "Product not found")
-
-@app.get("/api/users")
-def get_users(): return users
-
-@app.get("/api/attendance")
-def get_attendance(): return attendance
-
-@app.get("/api/health")
-def health(): return {"ok":True}
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
-    from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-import os
-
-# Mount static folder
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# --- SERVE WEBSITE ---
+# This must be BEFORE api routes mount
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def serve_website():
-    return FileResponse(os.path.join("static", "index.html"))
+    index_path = os.path.join("static", "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {
+        "status": "LONMA ORBIT API LIVE",
+        "website": "static/index.html not found",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
 
-# Your old API routes stay same
+# --- YOUR API ROUTES ---
 @app.get("/api/health")
-def health(): return {"ok":True}
+def health_check():
+    return {"ok": True, "service": "LONMA ORBIT", "port": 10000}
+
+@app.get("/api/users")
+def get_users():
+    # Replace with your real DB logic later
+    return [
+        {"id": 1, "username": "admin", "role": "admin"},
+        {"id": 2, "username": "cashier1", "role": "cashier"}
+    ]
+
+@app.get("/api/products")
+def get_products():
+    return [
+        {"id": 1, "name": "Coca 500ml", "price": 70, "stock": 100, "barcode": "5449000000996"},
+        {"id": 2, "name": "Bread 400g", "price": 65, "stock": 50, "barcode": "6161100123"},
+    ]
+
+@app.get("/api/attendance")
+def get_attendance():
+    return [
+        {"name": "Marlon Kikuyu Ang'undu", "days": 26, "balance": 14},
+        {"name": "Lavinah Boke Maroa", "days": 26, "balance": 0},
+    ]
+
+# --- IMPORT YOUR EXISTING ROUTES IF YOU HAVE THEM ---
+# Uncomment these if you have files in /routes/
+try:
+    from routes import products as products_route
+    app.include_router(products_route.router, prefix="/api/products2", tags=["products"])
+except Exception as e:
+    print(f"Note: routes/products not loaded: {e}")
+
+try:
+    import auth
+    app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+except Exception as e:
+    print(f"Note: auth not loaded: {e}")
