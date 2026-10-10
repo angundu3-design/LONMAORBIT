@@ -1,1 +1,135 @@
-<div class="msg bot">Hello! I am your AI shopping assistant! 🛒<br><br>I check prices from Naivas, Quickmart, Carrefour, Chandarana & Magunas.<br><br>Try asking:<br>• "cheapest flour"<br>• "milk price"<br>• "rider how long"<br>• "what to cook"<div class="quick"><button onclick="askAI('cheapest flour')">Cheapest Flour</button><button onclick="askAI('milk price')">Milk Price</button><button onclick="askAI('rider delivery')">Rider Time</button><button onclick="askAI('help')">Help</button></div></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>LONMA ORBIT - POS v2.3</title>
+<link rel="icon" href="/static/logo.png">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;font-family:Inter,system-ui}
+body{margin:0;background:#0a0a0a;color:#fff}
+.top{background:#ffcc00;color:#000;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
+.card{background:#151515;border:1px solid #222;margin:12px;border-radius:16px;padding:16px}
+.btn{background:#ffcc00;color:#000;border:none;padding:12px 18px;border-radius:10px;font-weight:800;cursor:pointer}
+.btn-outline{background:transparent;color:#ffcc00;border:1px solid #ffcc00}
+input{width:100%;padding:14px;border-radius:10px;border:1px solid #333;background:#111;color:#fff;margin:8px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prod{background:#1e1e1e;padding:12px;border-radius:12px;border:1px solid #222;cursor:pointer}
+.cart-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #222}
+#reader{border-radius:16px;overflow:hidden}
+.nav{display:flex;gap:8px;overflow-x:auto}
+.nav button{white-space:nowrap}
+.badge{background:#222;padding:4px 10px;border-radius:20px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div><b>LONMA ORBIT</b> <span class="badge">v2.3 LIVE</span></div>
+  <div style="display:flex;gap:8px">
+    <button class="btn" onclick="openScan()">📷 SCAN</button>
+    <button class="btn btn-outline" onclick="location.href='/docs'">API</button>
+  </div>
+</div>
+
+<div class="card" id="scanCard" style="display:none">
+  <div id="reader"></div>
+  <button class="btn btn-outline" style="width:100%;margin-top:10px" onclick="closeScan()">Close Scanner</button>
+</div>
+
+<div class="card">
+  <h3 style="margin:0 0 8px">🛒 Point of Sale - Westlands</h3>
+  <input id="search" placeholder="Scan barcode or search product... (e.g. 5449000000996)" oninput="liveSearch(this.value)">
+  <div class="grid" id="products"></div>
+</div>
+
+<div class="card">
+  <h3 style="margin:0">Cart - <span id="total">KES 0</span> <span id="count" class="badge">0 items</span></h3>
+  <div id="cart" style="margin-top:10px"></div>
+  <button class="btn" style="width:100%;margin-top:14px" onclick="checkout()">Checkout & Print PDF Receipt</button>
+</div>
+
+<div class="card">
+  <h3>📊 Attendance - Sept 2026</h3>
+  <div id="att"><small>Loading 21 staff...</small></div>
+</div>
+
+<div class="card" style="text-align:center;opacity:.6">
+  <small>Website + App POS running on same domain<br>app.lonmaorbit.co.ke / api.lonmaorbit.co.ke<br>© LONMA ORBIT</small>
+</div>
+
+<script>
+const API = window.location.origin;
+let PRODUCTS = [
+  {id:1,name:"Coca Cola 500ml",price:70,stock:120,barcode:"5449000000996"},
+  {id:2,name:"Bread 400g",price:65,stock:50,barcode:"6161100123"},
+  {id:3,name:"Milk 500ml",price:60,stock:80,barcode:"6001234567890"}
+];
+let CART = [];
+
+async function init(){
+  try{
+    let r = await fetch(API+"/api/products");
+    if(r.ok) PRODUCTS = await r.json();
+  }catch(e){ console.log("using local products") }
+  renderProducts(PRODUCTS);
+  try{
+    let a = await fetch(API+"/api/attendance");
+    if(a.ok){
+      let list = await a.json();
+      document.getElementById("att").innerHTML = list.map(s=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #222"><span>${s.name||s.staff}</span><span>${s.days||s.present} days</span></div>`).join("");
+    }
+  }catch(e){}
+}
+init();
+
+function renderProducts(list){
+  document.getElementById("products").innerHTML = list.map(p=>`
+    <div class="prod" onclick="addCart(${p.id})">
+      <b>${p.name}</b><br>
+      <small style="opacity:.7">Stock: ${p.stock} | ${p.barcode}</small><br>
+      <b style="color:#ffcc00">KES ${p.price}</b>
+    </div>
+  `).join("");
+}
+function liveSearch(v){
+  if(!v) return renderProducts(PRODUCTS);
+  let f = PRODUCTS.filter(p=> p.name.toLowerCase().includes(v.toLowerCase()) || p.barcode.includes(v));
+  renderProducts(f);
+  let exact = PRODUCTS.find(p=> p.barcode===v.trim());
+  if(exact) { addCart(exact.id); document.getElementById("search").value=""; }
+}
+function addCart(id){
+  let p = PRODUCTS.find(x=>x.id===id);
+  CART.push(p);
+  renderCart();
+  if(navigator.vibrate) navigator.vibrate(50);
+}
+function renderCart(){
+  let total=0;
+  document.getElementById("cart").innerHTML = CART.map(c=>{ total+=c.price; return `<div class="cart-line"><span>${c.name}</span><b>${c.price}</b></div>`}).join("") || "<small style='opacity:.5'>Cart empty - scan a product</small>";
+  document.getElementById("total").innerText = "KES "+total;
+  document.getElementById("count").innerText = CART.length+" items";
+}
+function openScan(){
+  document.getElementById("scanCard").style.display="block";
+  let qr = new Html5Qrcode("reader");
+  qr.start({facingMode:"environment"}, {fps:10, qrbox:{width:250,height:250}},
+    (txt)=>{ liveSearch(txt); qr.stop(); closeScan(); },
+    ()=>{}
+  );
+  window._qr = qr;
+}
+function closeScan(){
+  document.getElementById("scanCard").style.display="none";
+  try{ window._qr && window._qr.stop(); }catch(e){}
+}
+function checkout(){
+  if(!CART.length) return alert("Cart empty");
+  let total = CART.reduce((s,c)=>s+c.price,0);
+  let w = window.open("","_blank");
+  w.document.write(`<html><body style="font-family:monospace;padding:20px"><h2>LONMA ORBIT RECEIPT</h2><p>${new Date().toLocaleString()}<br>Westlands Branch</p><hr>${CART.map(c=>`${c.name} - KES ${c.price}`).join("<br>")}<hr><h3>TOTAL: KES ${total}</h3><p>MPESA Paybill: 247247 Acc: Lonma<br>Signature: ________________</p><script>window.print()<\/script></body></html>`);
+}
+</script>
+</body>
+</html>
