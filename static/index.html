@@ -4,103 +4,103 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LONMA ORBIT</title>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-*{margin:0;box-sizing:border-box;font-family:system-ui}
-body{background:#f0f6ff}
-.header{background:#0a3d9c;color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
-.header img{height:40px;width:40px;border-radius:50%;object-fit:cover;border:2px solid #fff;background:#fff}
-.main{padding:14px;max-width:1100px;margin:auto}
-.search-box{display:flex;gap:8px;margin:12px 0}
-.search-box input{flex:1;padding:14px;border-radius:10px;border:1px solid #c5d5f0}
-.btn{background:#0a3d9c;color:#fff;border:none;padding:12px 18px;border-radius:10px;font-weight:700;cursor:pointer}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
-.prod{background:#fff;border-radius:14px;padding:14px;border:1px solid #dbe6ff}
-.prod b{color:#0a3d9c}
-.cart{background:#fff;border-radius:14px;padding:16px;margin-top:14px;border:1px solid #dbe6ff}
-.line{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eef3ff}
-#reader{border-radius:14px;overflow:hidden;margin-bottom:10px}
+*{box-sizing:border-box;margin:0;font-family:system-ui}
+body{background:#080a0a;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
+.card{width:100%;max-width:420px;background:#111314;border:1px solid #1a2d2e;border-radius:28px;padding:28px 22px}
+.logo{width:86px;height:86px;background:#1490a3;border-radius:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#fff;font-weight:800;font-size:32px;letter-spacing:1px}
+h1{text-align:center;color:#fff;letter-spacing:4px;font-size:22px}
+.sub{text-align:center;color:#1490a3;letter-spacing:4px;font-size:11px;margin:6px 0 18px}
+.tabs{display:flex;gap:10px;margin-bottom:18px}
+.tab{flex:1;padding:12px;border-radius:999px;border:1px solid #222;font-weight:700;cursor:pointer}
+.tab-active{background:#1490a3;color:#fff;border-color:#1490a3}
+.tab-inactive{background:#151718;color:#6a6f70}
+input{width:100%;padding:16px 16px;border-radius:12px;background:#0c0f10;border:1px solid #212525;color:#fff;margin-bottom:14px;outline:none}
+input:focus{border-color:#1490a3}
+.terms{display:flex;align-items:center;gap:10px;color:#c9c9c9;font-size:14px;margin:6px 0 18px}
+.terms a{color:#1490a3}
+.check{width:20px;height:20px;border-radius:4px;border:1px solid #2a2e2e;background:#0c0f10;appearance:none;display:grid;place-items:center}
+.check:checked{background:#1490a3}
+.btn{width:100%;padding:16px;border-radius:12px;background:#1490a3;color:#fff;border:none;font-weight:800;font-size:16px;cursor:pointer}
+.hint{margin-top:16px;background:#0c0f10;border:1px dashed #2a2e2e;border-radius:12px;padding:12px;color:#8a8f90;font-size:14px;line-height:22px}
+.foot{text-align:center;color:#3a4040;font-size:12px;margin-top:14px}
+#app{display:none;width:100%;max-width:1100px}
 </style>
 </head>
 <body>
-<div class="header">
-<div style="display:flex;align-items:center;gap:10px">
-<img src="/static/logo.png">
-<b>LONMA ORBIT</b>
+<div class="card" id="loginCard">
+<div class="logo">LO</div>
+<h1>LONMA ORBIT</h1>
+<div class="sub">SIGNING & CREATING OS</div>
+<div class="tabs">
+<button class="tab tab-active" id="tLogin" onclick="switchTab('login')">LOGIN</button>
+<button class="tab tab-inactive" id="tCreate" onclick="switchTab('create')">CREATE ACCOUNT</button>
 </div>
-<button class="btn" style="background:#fff;color:#0a3d9c" onclick="startScan()">📷 SCAN</button>
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+<input id="email" placeholder="Email" style="display:none">
+<div class="terms">
+<input type="checkbox" id="agree" class="check">
+<label for="agree">I agree to <a href="#">Terms & Conditions</a></label>
+</div>
+<button class="btn" onclick="doLogin()">LOGIN →</button>
+<div class="hint">
+👑 admin / Lonma@2026<br>
+💰 cashier1 / 1234
+</div>
+<div class="foot">Terms • Privacy • © 2026 LO</div>
 </div>
 
-<div class="main">
-<div id="reader" style="display:none"></div>
-<div class="search-box">
-<input id="q" placeholder="Scan or search" oninput="filter(this.value)">
-<button class="btn" onclick="startScan()">Scan</button>
+<div id="app">
+<div style="background:#0e1414;padding:14px 18px;border-radius:18px;display:flex;justify-content:space-between;align-items:center;color:#fff;margin-bottom:12px;border:1px solid #1a2d2e">
+<b style="letter-spacing:2px">LONMA ORBIT</b>
+<button style="background:#1490a3;color:#fff;border:none;padding:8px 14px;border-radius:999px;font-weight:700" onclick="logout()">Logout</button>
 </div>
-<div class="grid" id="products"></div>
-<div class="cart">
-<h3>Cart - <span id="total">KES 0</span> <span id="cnt">0</span></h3>
-<div id="cart"></div>
-<button class="btn" style="width:100%;margin-top:12px" onclick="checkout()">Checkout & Print</button>
+<div style="background:#111314;border:1px solid #1a2d2e;border-radius:18px;padding:16px;color:#fff">
+<h3>Dashboard Live</h3>
+<p style="color:#8a8f90;margin-top:8px">Website + POS connected to /api/products</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:14px" id="products"></div>
 </div>
 </div>
 
 <script>
-const API=location.origin;
-let PRODUCTS=[];
-let CART=[];
-
-async function load(){
-let r=await fetch(API+"/api/products");
-PRODUCTS=await r.json();
-show(PRODUCTS);
+let mode='login';
+function switchTab(m){
+mode=m;
+document.getElementById('tLogin').className=m==='login'?'tab tab-active':'tab tab-inactive';
+document.getElementById('tCreate').className=m==='create'?'tab tab-active':'tab tab-inactive';
+document.getElementById('email').style.display=m==='create'?'block':'none';
+document.querySelector('.btn').innerText=m==='login'?'LOGIN →':'CREATE →';
 }
-load();
-
-function show(list){
-document.getElementById("products").innerHTML=list.map(p=>`
-<div class="prod" onclick="add(${p.id})">
-<b>${p.name}</b><br>
-<small>${p.barcode}</small><br>
-<b>KES ${p.price}</b><br>
-<small>Stock ${p.stock}</small>
-</div>`).join("");
+function doLogin(){
+let u=document.getElementById('user').value.trim();
+let p=document.getElementById('pass').value.trim();
+let agree=document.getElementById('agree').checked;
+if(!u||!p){alert('Enter username and password');return;}
+if(!agree){alert('Agree to Terms');return;}
+if((u==='admin'&&p==='Lonma@2026')||(u==='cashier1'&&p==='1234')||mode==='create'){
+localStorage.setItem('lo_user',u);
+showApp();
+}else{alert('Invalid - use admin / Lonma@2026');}
 }
-
-function filter(v){
-let f=PRODUCTS.filter(p=>p.name.toLowerCase().includes(v.toLowerCase())||p.barcode.includes(v));
-show(f);
-let e=PRODUCTS.find(p=>p.barcode===v.trim());
-if(e){add(e.id);document.getElementById("q").value="";}
+function showApp(){
+document.getElementById('loginCard').style.display='none';
+document.getElementById('app').style.display='block';
+loadProducts();
 }
-
-function add(id){
-let p=PRODUCTS.find(x=>x.id===id);
-CART.push(p);
-render();
+function logout(){
+localStorage.removeItem('lo_user');
+document.getElementById('app').style.display='none';
+document.getElementById('loginCard').style.display='block';
 }
-
-function render(){
-let t=0;
-document.getElementById("cart").innerHTML=CART.map(c=>{t+=c.price;return `<div class="line"><span>${c.name}</span><b>${c.price}</b></div>`}).join("");
-document.getElementById("total").innerText="KES "+t;
-document.getElementById("cnt").innerText=CART.length;
+async function loadProducts(){
+try{
+let r=await fetch('/api/products');
+let data=await r.json();
+document.getElementById('products').innerHTML=data.map(p=>`<div style="background:#0c0f10;border:1px solid #1f2a2a;padding:12px;border-radius:12px"><b>${p.name}</b><br><small style="color:#7a8a8a">${p.barcode}</small><br><b style="color:#1490a3">KES ${p.price}</b></div>`).join('');
+}catch(e){}
 }
-
-function startScan(){
-document.getElementById("reader").style.display="block";
-let qr=new Html5Qrcode("reader");
-qr.start({facingMode:"environment"},{fps:10,qrbox:250},(txt)=>{filter(txt);qr.stop();document.getElementById("reader").style.display="none";},()=>{});
-window.qr=qr;
-}
-
-function checkout(){
-if(!CART.length)return;
-let total=CART.reduce((s,c)=>s+c.price,0);
-let w=window.open("","_blank");
-w.document.write(`<h2>LONMA ORBIT</h2>${CART.map(c=>`${c.name} KES ${c.price}<br>`).join("")}<hr>TOTAL KES ${total}<br><br>Signature _________`);
-w.print();
-}
+if(localStorage.getItem('lo_user')) showApp();
 </script>
 </body>
 </html>
