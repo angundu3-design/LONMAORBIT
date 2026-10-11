@@ -11,6 +11,7 @@ USERS = {
 }
 
 PRODUCTS = [
+ # OLD STOCK
  {"id":1,"name":"Rice 2kg Pishori","price":280,"cat":"Food","stock":100},
  {"id":2,"name":"Cooking Oil 1L","price":220,"cat":"Food","stock":80},
  {"id":3,"name":"Sugar 2kg Kabras","price":310,"cat":"Food","stock":90},
@@ -29,6 +30,16 @@ PRODUCTS = [
  {"id":29,"name":"Beer Tusker 500ml","price":180,"cat":"Drinks","stock":100},
  {"id":30,"name":"Wine 750ml","price":850,"cat":"Drinks","stock":20},
  {"id":31,"name":"Soda 500ml","price":60,"cat":"Drinks","stock":200},
+ # NEW PWANI STOCK - Oct 11
+ {"id":32,"name":"Fresh Fri Cooking Oil 2L","price":650,"cat":"Food","stock":60},
+ {"id":33,"name":"Detrex Citronella Oil Bath 110g","price":60,"cat":"Toiletries","stock":200},
+ {"id":34,"name":"Sawa Body Lotion For Men 72Hrs","price":280,"cat":"Toiletries","stock":80},
+ {"id":35,"name":"Detrex Pine Drops Bath 110g","price":60,"cat":"Toiletries","stock":200},
+ {"id":36,"name":"Salit Cooking Oil 5L","price":1250,"cat":"Food","stock":40},
+ {"id":37,"name":"Detrex Cool Mint Bath 110g","price":60,"cat":"Toiletries","stock":200},
+ {"id":38,"name":"Diva Anti-Dandruff Pomade 250ml","price":280,"cat":"Toiletries","stock":90},
+ {"id":39,"name":"Detrex Germ Protection Aloe 110g","price":60,"cat":"Toiletries","stock":200},
+ {"id":40,"name":"Diva Anti-Breakage Growth 250ml","price":300,"cat":"Toiletries","stock":90},
 ]
 
 CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY", "")
