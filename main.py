@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import os, requests, base64, datetime
+import os, base64, datetime, json, urllib.request, urllib.error
 
 app = FastAPI()
 
@@ -31,22 +31,40 @@ PRODUCTS = [
  {"id":31,"name":"Soda 500ml","price":60,"cat":"Drinks","stock":200},
 ]
 
-# --- DARAJA CONFIG ---
-# Set these in Render -> Environment
 CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY", "")
 CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "")
-SHORTCODE = os.getenv("MPESA_SHORTCODE", "174379") # Test paybill
+SHORTCODE = os.getenv("MPESA_SHORTCODE", "174379")
 PASSKEY = os.getenv("MPESA_PASSKEY", "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919")
 CALLBACK_URL = os.getenv("MPESA_CALLBACK", "https://app.lonmaorbit.co.ke/api/callback")
 
-def get_token():
-    if not CONSUMER_KEY: return None
-    url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
-    r = requests.get(url, auth=(CONSUMER_KEY, CONSUMER_SECRET))
-    return r.json().get("access_token")
+def http_get(url, auth=None):
+    req = urllib.request.Request(url)
+    if auth:
+        cred = base64.b64encode(f"{auth[0]}:{auth[1]}".encode()).decode()
+        req.add_header("Authorization", f"Basic {cred}")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.loads(r.read().decode())
+    except Exception as e:
+        print(e)
+        return {}
+
+def http_post(url, payload, token=None):
+    data = json.dumps(payload).encode()
+    req = urllib.request.Request(url, data=data, headers={"Content-Type":"application/json"})
+    if token:
+        req.add_header("Authorization", f"Bearer {token}")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        return {"error": e.read().decode()}
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/")
-def root(): return FileResponse("static/index.html")
+def root():
+    return FileResponse("static/index.html")
 
 @app.get("/api/products")
 def get_products(cat: str = None):
@@ -74,14 +92,14 @@ async def stk_push(req: Request):
     amount = int(d.get("amount",1))
     if phone.startswith("0"): phone = "254"+phone[1:]
     if phone.startswith("7"): phone = "254"+phone
-    # If Daraja keys not set, simulate success (for testing)
     if not CONSUMER_KEY:
-        return {"ok":True,"msg":"DEMO - Enter PIN on phone","phone":phone,"amount":amount,"note":"Set MPESA keys in Render to go live"}
+        return {"ok":True,"msg":"DEMO MODE - Tell customer to enter M-Pesa PIN","phone":phone,"amount":amount}
     try:
-        token = get_token()
+        token_data = http_get("https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials", auth=(CONSUMER_KEY, CONSUMER_SECRET))
+        token = token_data.get("access_token")
+        if not token: return {"ok":False,"error":"Failed to get token","detail":token_data}
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         password = base64.b64encode((SHORTCODE+PASSKEY+timestamp).encode()).decode()
-        headers = {"Authorization": f"Bearer {token}"}
         payload = {
             "BusinessShortCode": SHORTCODE,
             "Password": password,
@@ -93,18 +111,17 @@ async def stk_push(req: Request):
             "PhoneNumber": phone,
             "CallBackURL": CALLBACK_URL,
             "AccountReference": "LONMA MART",
-            "TransactionDesc": "LONMA MART Payment"
+            "TransactionDesc": "LONMA MART"
         }
-        url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
-        resp = requests.post(url, json=payload, headers=headers)
-        return {"ok":True,"daraja":resp.json(),"phone":phone}
+        resp = http_post("https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest", payload, token=token)
+        return {"ok":True,"daraja":resp,"phone":phone}
     except Exception as e:
         return {"ok":False,"error":str(e)}
 
 @app.post("/api/callback")
 async def callback(req: Request):
     data = await req.json()
-    print("M-PESA CALLBACK:", data)
+    print("CALLBACK:", data)
     return {"ok":True}
 
 if os.path.exists("static"):
