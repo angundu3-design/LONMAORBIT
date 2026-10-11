@@ -30,14 +30,14 @@ PRODUCTS = [
  {"id":30,"name":"Wine 750ml","price":850,"cat":"Drinks","stock":20,"image":""},
  {"id":31,"name":"Soda 500ml","price":60,"cat":"Drinks","stock":200,"image":""},
  {"id":32,"name":"Fresh Fri Cooking Oil 2L","price":650,"cat":"Food","stock":60,"image":"freshfri.jpg"},
- {"id":33,"name":"Detrex Citronella Oil Bath","price":60,"cat":"Toiletries","stock":200,"image":"detrex_citronella.jpg"},
+ {"id":33,"name":"Detrex Citronella Oil","price":60,"cat":"Toiletries","stock":200,"image":"detrex_citronella.jpg"},
  {"id":34,"name":"Sawa Lotion For Men 72Hrs","price":280,"cat":"Toiletries","stock":80,"image":"sawa.jpg"},
- {"id":35,"name":"Detrex Pine Drops Bath","price":60,"cat":"Toiletries","stock":200,"image":"detrex_pine.jpg"},
+ {"id":35,"name":"Detrex Pine Drops","price":60,"cat":"Toiletries","stock":200,"image":"detrex_pine.jpg"},
  {"id":36,"name":"Salit Cooking Oil 5L","price":1250,"cat":"Food","stock":40,"image":"salit.jpg"},
- {"id":37,"name":"Detrex Cool Mint Bath","price":60,"cat":"Toiletries","stock":200,"image":"detrex_cool.jpg"},
+ {"id":37,"name":"Detrex Cool Mint","price":60,"cat":"Toiletries","stock":200,"image":"detrex_cool.jpg"},
  {"id":38,"name":"Diva Anti-Dandruff 250ml","price":280,"cat":"Toiletries","stock":90,"image":"diva_dandruff.jpg"},
- {"id":39,"name":"Detrex Aloe Vera 110g","price":60,"cat":"Toiletries","stock":200,"image":"detrex_aloe.jpg"},
- {"id":40,"name":"Diva Anti-Breakage 250ml","price":300,"cat":"Toiletries","stock":90,"image":"diva_growth.jpg"},
+ {"id":39,"name":"Detrex Aloe Vera","price":60,"cat":"Toiletries","stock":200,"image":"detrex_aloe.jpg"},
+ {"id":40,"name":"Diva Anti-Breakage & Growth 250ml","price":300,"cat":"Toiletries","stock":90,"image":"diva_growth.jpg"},
 ]
 
 CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY", "")
@@ -52,28 +52,20 @@ def http_get(url, auth=None):
         cred = base64.b64encode(f"{auth[0]}:{auth[1]}".encode()).decode()
         req.add_header("Authorization", f"Basic {cred}")
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
-            return json.loads(r.read().decode())
-    except Exception as e:
-        print(e)
-        return {}
+        with urllib.request.urlopen(req, timeout=20) as r: return json.loads(r.read().decode())
+    except: return {}
 
 def http_post(url, payload, token=None):
     data = json.dumps(payload).encode()
     req = urllib.request.Request(url, data=data, headers={"Content-Type":"application/json"})
-    if token:
-        req.add_header("Authorization", f"Bearer {token}")
+    if token: req.add_header("Authorization", f"Bearer {token}")
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
-            return json.loads(r.read().decode())
-    except urllib.error.HTTPError as e:
-        return {"error": e.read().decode()}
-    except Exception as e:
-        return {"error": str(e)}
+        with urllib.request.urlopen(req, timeout=20) as r: return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e: return {"error": e.read().decode()}
+    except Exception as e: return {"error": str(e)}
 
 @app.get("/")
-def root():
-    return FileResponse("static/index.html")
+def root(): return FileResponse("static/index.html")
 
 @app.get("/api/products")
 def get_products(cat: str = None):
@@ -82,8 +74,7 @@ def get_products(cat: str = None):
 
 @app.post("/api/register")
 def register(data: dict):
-    USERS[data.get("username","")]=data
-    USERS[data.get("email","")]=data
+    USERS[data.get("username","")]=data; USERS[data.get("email","")]=data
     return {"ok":True}
 
 @app.post("/api/login")
@@ -101,25 +92,20 @@ async def stk_push(req: Request):
     amount = int(d.get("amount",1))
     if phone.startswith("0"): phone = "254"+phone[1:]
     if phone.startswith("7"): phone = "254"+phone
-    if not CONSUMER_KEY:
-        return {"ok":True,"msg":"DEMO MODE","phone":phone,"amount":amount}
+    if not CONSUMER_KEY: return {"ok":True,"msg":"DEMO MODE - Enter M-Pesa PIN on phone","phone":phone,"amount":amount}
     try:
         token_data = http_get("https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials", auth=(CONSUMER_KEY, CONSUMER_SECRET))
         token = token_data.get("access_token")
-        if not token: return {"ok":False,"error":"Failed token","detail":token_data}
+        if not token: return {"ok":False,"error":"token failed","detail":token_data}
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         password = base64.b64encode((SHORTCODE+PASSKEY+timestamp).encode()).decode()
         payload = {"BusinessShortCode": SHORTCODE,"Password": password,"Timestamp": timestamp,"TransactionType": "CustomerPayBillOnline","Amount": amount,"PartyA": phone,"PartyB": SHORTCODE,"PhoneNumber": phone,"CallBackURL": CALLBACK_URL,"AccountReference": "LONMA MART","TransactionDesc": "LONMA MART"}
         resp = http_post("https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest", payload, token=token)
         return {"ok":True,"daraja":resp,"phone":phone}
-    except Exception as e:
-        return {"ok":False,"error":str(e)}
+    except Exception as e: return {"ok":False,"error":str(e)}
 
 @app.post("/api/callback")
 async def callback(req: Request):
-    data = await req.json()
-    print("CALLBACK:", data)
-    return {"ok":True}
+    data = await req.json(); print("CALLBACK:", data); return {"ok":True}
 
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+if os.path.exists("static"): app.mount("/static", StaticFiles(directory="static"), name="static")
