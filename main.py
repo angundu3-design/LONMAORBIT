@@ -1,16 +1,28 @@
+# LONMA MART - FastAPI Backend
+# This file runs your app on Render
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os, base64, datetime, json, urllib.request, urllib.error
 
-app = FastAPI()
+app = FastAPI() # Create FastAPI app
 
+# --- USERS DATABASE (simple in-memory) ---
 USERS = {
  "admin": {"username":"admin","email":"admin@lonmaorbit.co.ke","password":"Lonma@2026"},
  "Mongelah": {"username":"Mongelah","email":"mongelah@lonmaorbit.co.ke","password":"1234"},
 }
 
+# --- PRODUCTS DATABASE ---
+# id = unique product code
+# name = product name shown in app
+# price = KES price
+# cat = category (Food, Toiletries, Drinks etc)
+# stock = how many in shop
+# image = photo filename in /static folder (must upload photos)
 PRODUCTS = [
+ # Old products
  {"id":1,"name":"Rice 2kg Pishori","price":280,"cat":"Food","stock":100,"image":""},
  {"id":2,"name":"Cooking Oil 1L","price":220,"cat":"Food","stock":80,"image":""},
  {"id":3,"name":"Sugar 2kg Kabras","price":310,"cat":"Food","stock":90,"image":""},
@@ -29,57 +41,77 @@ PRODUCTS = [
  {"id":29,"name":"Beer Tusker 500ml","price":180,"cat":"Drinks","stock":100,"image":""},
  {"id":30,"name":"Wine 750ml","price":850,"cat":"Drinks","stock":20,"image":""},
  {"id":31,"name":"Soda 500ml","price":60,"cat":"Drinks","stock":200,"image":""},
- {"id":32,"name":"Fresh Fri Cooking Oil 2L","price":650,"cat":"Food","stock":60,"image":"freshfri.jpg"},
- {"id":33,"name":"Detrex Citronella Oil","price":60,"cat":"Toiletries","stock":200,"image":"detrex_citronella.jpg"},
- {"id":34,"name":"Sawa Lotion For Men 72Hrs","price":280,"cat":"Toiletries","stock":80,"image":"sawa.jpg"},
- {"id":35,"name":"Detrex Pine Drops","price":60,"cat":"Toiletries","stock":200,"image":"detrex_pine.jpg"},
- {"id":36,"name":"Salit Cooking Oil 5L","price":1250,"cat":"Food","stock":40,"image":"salit.jpg"},
- {"id":37,"name":"Detrex Cool Mint","price":60,"cat":"Toiletries","stock":200,"image":"detrex_cool.jpg"},
- {"id":38,"name":"Diva Anti-Dandruff 250ml","price":280,"cat":"Toiletries","stock":90,"image":"diva_dandruff.jpg"},
- {"id":39,"name":"Detrex Aloe Vera","price":60,"cat":"Toiletries","stock":200,"image":"detrex_aloe.jpg"},
- {"id":40,"name":"Diva Anti-Breakage & Growth 250ml","price":300,"cat":"Toiletries","stock":90,"image":"diva_growth.jpg"},
+ # NEW PWANI PRODUCTS - Real Pwani Oil products from your photos
+ {"id":32,"name":"Fresh Fri Cooking Oil 2L","price":650,"cat":"Food","stock":60,"image":"freshfri.jpg"}, # Yellow bottle 2L
+ {"id":33,"name":"Detrex Citronella Oil","price":60,"cat":"Toiletries","stock":200,"image":"detrex_citronella.jpg"}, # Yellow box citronella
+ {"id":34,"name":"Sawa Lotion For Men 72Hrs","price":280,"cat":"Toiletries","stock":80,"image":"sawa.jpg"}, # White bottle for men
+ {"id":35,"name":"Detrex Pine Drops","price":60,"cat":"Toiletries","stock":200,"image":"detrex_pine.jpg"}, # Black pine
+ {"id":36,"name":"Salit Cooking Oil 5L","price":1250,"cat":"Food","stock":40,"image":"salit.jpg"}, # 5L jerrican
+ {"id":37,"name":"Detrex Cool Mint","price":60,"cat":"Toiletries","stock":200,"image":"detrex_cool.jpg"}, # Blue mint
+ {"id":38,"name":"Diva Anti-Dandruff 250ml","price":280,"cat":"Toiletries","stock":90,"image":"diva_dandruff.jpg"}, # Diva white jar
+ {"id":39,"name":"Detrex Aloe Vera","price":60,"cat":"Toiletries","stock":200,"image":"detrex_aloe.jpg"}, # Green aloe
+ {"id":40,"name":"Diva Anti-Breakage & Growth 250ml","price":300,"cat":"Toiletries","stock":90,"image":"diva_growth.jpg"}, # Diva gold jar
 ]
 
+# --- M-PESA DARAJA CREDENTIALS ---
+# Get these from Render Environment Variables
 CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY", "")
 CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "")
-SHORTCODE = os.getenv("MPESA_SHORTCODE", "174379")
+SHORTCODE = os.getenv("MPESA_SHORTCODE", "174379") # Your Paybill/Till
 PASSKEY = os.getenv("MPESA_PASSKEY", "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919")
 CALLBACK_URL = os.getenv("MPESA_CALLBACK", "https://app.lonmaorbit.co.ke/api/callback")
 
+# Helper: HTTP GET with auth
 def http_get(url, auth=None):
     req = urllib.request.Request(url)
     if auth:
         cred = base64.b64encode(f"{auth[0]}:{auth[1]}".encode()).decode()
         req.add_header("Authorization", f"Basic {cred}")
     try:
-        with urllib.request.urlopen(req, timeout=20) as r: return json.loads(r.read().decode())
-    except: return {}
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.loads(r.read().decode())
+    except:
+        return {}
 
+# Helper: HTTP POST with token
 def http_post(url, payload, token=None):
     data = json.dumps(payload).encode()
     req = urllib.request.Request(url, data=data, headers={"Content-Type":"application/json"})
     if token: req.add_header("Authorization", f"Bearer {token}")
     try:
-        with urllib.request.urlopen(req, timeout=20) as r: return json.loads(r.read().decode())
-    except urllib.error.HTTPError as e: return {"error": e.read().decode()}
-    except Exception as e: return {"error": str(e)}
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        return {"error": e.read().decode()}
+    except Exception as e:
+        return {"error": str(e)}
+
+# --- API ROUTES ---
 
 @app.get("/")
-def root(): return FileResponse("static/index.html")
+def root():
+    # Serve the app homepage
+    return FileResponse("static/index.html")
 
 @app.get("/api/products")
 def get_products(cat: str = None):
-    if cat and cat!="All": return [p for p in PRODUCTS if p["cat"]==cat]
+    # Return all products, or filter by category
+    if cat and cat!="All":
+        return [p for p in PRODUCTS if p["cat"]==cat]
     return PRODUCTS
 
 @app.post("/api/register")
 def register(data: dict):
-    USERS[data.get("username","")]=data; USERS[data.get("email","")]=data
+    # Register new user
+    USERS[data.get("username","")]=data
+    USERS[data.get("email","")]=data
     return {"ok":True}
 
 @app.post("/api/login")
 def login(data: dict):
-    k=data.get("username","").strip(); pw=data.get("password","").strip()
+    # Login check
+    k=data.get("username","").strip()
+    pw=data.get("password","").strip()
     for v in USERS.values():
         if (v.get("email")==k or v.get("username")==k) and v.get("password")==pw:
             return {"ok":True,"username":v["username"],"email":v["email"]}
@@ -87,12 +119,14 @@ def login(data: dict):
 
 @app.post("/api/stk")
 async def stk_push(req: Request):
+    # M-Pesa STK Push - triggers payment prompt on customer phone
     d = await req.json()
     phone = d.get("phone","").replace(" ","").replace("+","")
     amount = int(d.get("amount",1))
-    if phone.startswith("0"): phone = "254"+phone[1:]
+    if phone.startswith("0"): phone = "254"+phone[1:] # 07xx -> 2547xx
     if phone.startswith("7"): phone = "254"+phone
-    if not CONSUMER_KEY: return {"ok":True,"msg":"DEMO MODE - Enter M-Pesa PIN on phone","phone":phone,"amount":amount}
+    if not CONSUMER_KEY:
+        return {"ok":True,"msg":"DEMO MODE - Enter M-Pesa PIN","phone":phone,"amount":amount}
     try:
         token_data = http_get("https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials", auth=(CONSUMER_KEY, CONSUMER_SECRET))
         token = token_data.get("access_token")
@@ -102,10 +136,16 @@ async def stk_push(req: Request):
         payload = {"BusinessShortCode": SHORTCODE,"Password": password,"Timestamp": timestamp,"TransactionType": "CustomerPayBillOnline","Amount": amount,"PartyA": phone,"PartyB": SHORTCODE,"PhoneNumber": phone,"CallBackURL": CALLBACK_URL,"AccountReference": "LONMA MART","TransactionDesc": "LONMA MART"}
         resp = http_post("https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest", payload, token=token)
         return {"ok":True,"daraja":resp,"phone":phone}
-    except Exception as e: return {"ok":False,"error":str(e)}
+    except Exception as e:
+        return {"ok":False,"error":str(e)}
 
 @app.post("/api/callback")
 async def callback(req: Request):
-    data = await req.json(); print("CALLBACK:", data); return {"ok":True}
+    # Safaricom calls this after payment
+    data = await req.json()
+    print("CALLBACK:", data)
+    return {"ok":True}
 
-if os.path.exists("static"): app.mount("/static", StaticFiles(directory="static"), name="static")
+# Serve static files (images, css)
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
