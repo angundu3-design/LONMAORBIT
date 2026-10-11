@@ -1,62 +1,43 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LONMA MART - Daraja</title><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script><style>*{box-sizing:border-box;margin:0;font-family:system-ui}body{background:#080a0a;color:#fff;min-height:100vh}.loginWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.card{width:100%;max-width:420px;background:#111314;border:1px solid #1a2d2e;border-radius:28px;padding:28px 22px}.logo{width:96px;height:96px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;overflow:hidden;border:3px solid #1490a3}.logo img{width:100%;height:100%;object-fit:cover}input{width:100%;padding:14px;border-radius:12px;background:#eef2f3;border:1px solid #212525;color:#000;margin-bottom:10px;outline:none}.btn{width:100%;padding:14px;border-radius:12px;background:#1490a3;color:#fff;border:none;font-weight:800;cursor:pointer}.btnMpesa{width:100%;padding:14px;border-radius:12px;background:#2d9c0a;color:#fff;border:none;font-weight:800;cursor:pointer;margin-top:8px}.btn2{padding:8px 14px;border-radius:999px;background:#0c0f10;border:1px solid #1f2a2a;color:#8a9a9a;cursor:pointer;font-size:12px}.btn2.active{background:#1490a3;color:#fff}.top{background:#0e1414;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1490a3}#app{display:none}.grid{display:grid;grid-template-columns:260px 1fr 380px;gap:12px;padding:12px}.box{background:#111314;border:1px solid #1a2d2e;border-radius:16px;padding:14px}.prod{background:#0c0f10;border:1px solid #1f2a2a;border-radius:14px;padding:12px;cursor:pointer}.prod:hover{border-color:#1490a3}@media(max-width:900px){.grid{grid-template-columns:1fr}}</style></head><body>
-<div class="loginWrap" id="loginWrap"><div class="card" id="loginCard"><div class="logo"><img src="/static/logo.png"></div><h1 style="text-align:center;letter-spacing:4px">LONMA MART</h1><div style="text-align:center;color:#1490a3;font-size:11px;margin:6px 0 18px">NAIVAS CHAIN + DARAJA</div><input id="user" placeholder="Username or Email"><input id="pass" type="password" placeholder="Password"><button class="btn" onclick="doLogin()">LOGIN →</button><div style="text-align:center;margin-top:12px"><span style="color:#1490a3;cursor:pointer;font-weight:700" onclick="showCreate()">Create Account</span></div></div>
-<div class="card" id="createCard" style="display:none"><div class="logo"><img src="/static/logo.png"></div><h2 style="text-align:center">CREATE</h2><input id="c_name" placeholder="Full Name"><input id="c_email" type="email" placeholder="Email"><input id="c_user" placeholder="Username"><input id="c_pass" type="password" placeholder="Password"><input id="c_pass2" type="password" placeholder="Confirm"><button class="btn" onclick="doCreate()">CREATE →</button><button class="btn2" style="width:100%;margin-top:8px;padding:14px" onclick="showLogin()">Back</button></div></div>
-<div id="app"><div class="top"><div style="display:flex;align-items:center;gap:10px"><img src="/static/logo.png" style="height:38px;width:38px;border-radius:50%;border:2px solid #1490a3;background:#fff"><b>LONMA MART</b> <small style="background:#2d9c0a;padding:2px 8px;border-radius:99px;font-size:10px">M-PESA DARAJA</small></div><div><span id="who" style="color:#8a9a9a;font-size:12px"></span> <button onclick="logout()" style="background:#1490a3;color:#fff;border:none;padding:8px 14px;border-radius:999px;font-weight:700">Logout</button></div></div>
-<div id="reader" style="display:none;max-width:400px;margin:10px auto"></div>
-<div class="grid"><div class="box"><button class="btn" onclick="startScan()">📷 SCAN</button><input id="q" placeholder="Search..." oninput="filterQ(this.value)" style="margin-top:10px;background:#0c0f10;color:#fff"><div style="display:flex;gap:6px;margin:12px 0;overflow:auto"><button onclick="filterCat('All')" class="btn2 active" id="catAll">All</button><button onclick="filterCat('Food')" class="btn2" id="catFood">🍚Food</button><button onclick="filterCat('Electronics')" class="btn2" id="catElectronics">🔌Elec</button><button onclick="filterCat('Clothes')" class="btn2" id="catClothes">👕Clothes</button><button onclick="filterCat('Drinks')" class="btn2" id="catDrinks">🥤Drinks</button></div></div>
-<div class="box"><div id="products" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px"></div></div>
-<div class="box"><h3>Cart - <span id="total">KES 0</span></h3><div id="cart" style="margin-top:10px;max-height:28vh;overflow:auto"></div>
-<input id="custName" placeholder="Customer Name - MARLON" style="margin-top:12px;background:#eef2f3;color:#000">
-<input id="custPhone" placeholder="Customer Number - 0712345678" type="tel" style="background:#eef2f3;color:#000;border:2px solid #2d9c0a;border-left:6px solid #2d9c0a">
-<input id="custEmail" type="email" placeholder="Customer Email - angundu3@gmail.com" style="background:#eef2f3;color:#000">
-<div style="font-size:11px;color:#2d9c0a;margin-top:6px">📱 M-Pesa STK will be sent to this number</div>
-<button class="btnMpesa" onclick="payMpesa()">💚 LIPA NA M-PESA - DARAJA STK</button>
-<button class="btn" onclick="checkoutCash()" style="margin-top:8px;background:#0e4d55">✓ Cash Checkout (No STK)</button>
-<div id="payStatus" style="margin-top:10px;padding:10px;border-radius:10px;display:none;font-size:12px"></div>
-</div></div></div>
+<!DOCTYPE html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LONMA MART</title>
+<style>
+body{background:#0f1115;color:white;font-family:sans-serif;margin:0;padding:10px;padding-bottom:140px}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 0}
+.tab{background:#2a2e38;padding:8px 16px;border-radius:20px;cursor:pointer;white-space:nowrap}
+.tab.active{background:#2fb5c8;color:#000;font-weight:bold}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:#1a1d24;border-radius:16px;padding:10px;text-align:center;border:1px solid #2a2e38}
+.card img{width:100%;height:110px;object-fit:contain;background:white;border-radius:10px}
+.price{color:#2fb5c8;font-weight:bold;margin:6px 0}
+.btn{background:#2fb5c8;color:#000;border:0;padding:8px;width:100%;border-radius:8px;font-weight:bold}
+#cart{position:fixed;bottom:0;left:0;right:0;background:#1a1d24;padding:12px;border-top:2px solid #2fb5c8}
+</style></head><body>
+<h1 style="color:#2fb5c8;text-align:center">LONMA MART</h1>
+<div class="tabs" id="tabs"></div>
+<div class="grid" id="grid"></div>
+<div id="cart">
+<div>Cart: <span id="cnt">0</span> items - KES <span id="total">0</span></div>
+<input id="phone" placeholder="Customer 07xx" style="width:100%;padding:10px;margin:8px 0;border-radius:8px;border:0">
+<button class="btn" onclick="pay()" style="background:#00c853;color:white">PAY WITH M-PESA</button>
+</div>
 <script>
-let PRODUCTS=[],CART=[];
-function showCreate(){document.getElementById('loginCard').style.display='none';document.getElementById('createCard').style.display='block'}
-function showLogin(){document.getElementById('createCard').style.display='none';document.getElementById('loginCard').style.display='block'}
-async function doCreate(){let n=document.getElementById('c_name').value,e=document.getElementById('c_email').value,u=document.getElementById('c_user').value,pa=document.getElementById('c_pass').value,pa2=document.getElementById('c_pass2').value;if(!n||!e||!u||!pa)return alert('Fill all');if(pa!==pa2)return alert('No match');try{await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,email:e,username:u,password:pa})})}catch{}let us=JSON.parse(localStorage.getItem('lo_users')||'[]');us.push({name:n,email:e,username:u,password:pa});localStorage.setItem('lo_users',JSON.stringify(us));alert('Created');showLogin()}
-async function doLogin(){let u=document.getElementById('user').value.trim(),p=document.getElementById('pass').value.trim();try{let r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});let d=await r.json();if(d.ok){localStorage.setItem('lo_user',d.username);showApp();return}}catch{}localStorage.setItem('lo_user',u);showApp();}
-function showApp(){document.getElementById('loginWrap').style.display='none';document.getElementById('app').style.display='block';document.getElementById('who').innerText=localStorage.getItem('lo_user');loadAll();}
-function logout(){localStorage.removeItem('lo_user');location.reload();}
-async function loadAll(){let r=await fetch('/api/products');PRODUCTS=await r.json();draw(PRODUCTS);}
-function draw(list){document.getElementById('products').innerHTML=list.map(p=>`<div class="prod" onclick="add(${p.id})"><div style="font-size:22px">${p.cat==='Food'?'🍚':p.cat==='Electronics'?'🔌':p.cat==='Clothes'?'👕':'🥤'}</div><b style="font-size:13px">${p.name}</b><br><small style="color:#1490a3;font-weight:800">KES ${p.price}</small><div style="margin-top:6px;background:#1490a3;color:#fff;text-align:center;border-radius:6px;padding:5px;font-size:11px">ADD</div></div>`).join('');}
-function filterCat(c){document.querySelectorAll('[id^=cat]').forEach(b=>b.classList.remove('active'));document.getElementById('cat'+c).classList.add('active');let f=c==='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat===c);draw(f);}
-function filterQ(v){let f=PRODUCTS.filter(p=>p.name.toLowerCase().includes(v.toLowerCase()));draw(f);}
-function add(id){let p=PRODUCTS.find(x=>x.id===id);CART.push(p);drawCart();}
-function drawCart(){let t=CART.reduce((s,c)=>s+c.price,0);document.getElementById('total').innerText='KES '+t;document.getElementById('cart').innerHTML=CART.map((c,i)=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1a2d2e;font-size:13px"><span>${c.name}</span><span><b>${c.price}</b> <span onclick="CART.splice(${i},1);drawCart()" style="color:#f44;cursor:pointer">✕</span></span></div>`).join('')||'<div style="color:#5a6060;text-align:center;padding:15px">Empty</div>';}
-function startScan(){document.getElementById('reader').style.display='block';let qr=new Html5Qrcode('reader');qr.start({facingMode:'environment'},{fps:10,qrbox:250},(txt)=>{filterQ(txt);qr.stop();document.getElementById('reader').style.display='none';},()=>{});}
-async function payMpesa(){
-if(!CART.length)return alert('Add products like Yoghurt, Beer in your screenshot');
-let phone=document.getElementById('custPhone').value.trim();
-let name=document.getElementById('custName').value.trim();
-if(!phone)return alert('Enter Customer Number - e.g. 0712345678 from your screenshot');
-let tot=CART.reduce((s,c)=>s+c.price,0);
-let st=document.getElementById('payStatus');
-st.style.display='block';st.style.background='#1a2d0a';st.style.color='#8f8';st.innerHTML='⏳ Sending STK to '+phone+'... KES '+tot+'<br>Check phone for M-Pesa PIN prompt';
-try{
-let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:phone,amount:tot,name:name})});
-let d=await r.json();
-if(d.ok){
-st.innerHTML='✅ STK Sent to '+d.phone+'<br>💚 Amount KES '+tot+'<br>📱 Tell customer: Enter M-Pesa PIN now!<br><small>'+(d.msg||'Waiting for payment...')+'</small>';
-setTimeout(()=>{alert('If customer entered PIN, print receipt');checkoutCash();},8000);
-}else{
-st.style.background='#2d0a0a';st.style.color='#f88';st.innerHTML='❌ Failed: '+(d.error||'Check Daraja keys');
-}
-}catch(e){st.style.background='#2d0a0a';st.innerHTML='Error: '+e.message}
-}
-function checkoutCash(){
-if(!CART.length)return alert('Empty');
-let tot=CART.reduce((s,c)=>s+c.price,0);
-let name=document.getElementById('custName').value||'MARLON';
-let phone=document.getElementById('custPhone').value||'0712345678';
-let email=document.getElementById('custEmail').value||'angundu3@gmail.com';
-let w=window.open('','_blank');
-w.document.write(`<body style="font-family:monospace;padding:20px;max-width:340px;margin:auto"><center><h2>LONMA MART</h2><small>Daraja Paid</small><hr></center>Date: ${new Date().toLocaleString()}<br>Name: ${name}<br>Phone: ${phone}<br>Email: ${email}<hr>${CART.map(c=>`${c.name}<span style="float:right">${c.price}</span><br>`).join('')}<hr><b style="float:right">TOTAL KES ${tot}</b><br><br>Payment: M-Pesa Daraja STK to ${phone}<hr><center>Thank you!</center></body>`);
-w.print();CART=[];drawCart();document.getElementById('payStatus').style.display='none';
-}
-if(localStorage.getItem('lo_user'))showApp();
+let PRODUCTS=[],CART=[],ACTIVE='All';
+async function load(){let r=await fetch('/api/products');PRODUCTS=await r.json();
+let cats=['All',...new Set(PRODUCTS.map(p=>p.cat))];
+document.getElementById('tabs').innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filter('${c}')">${c}</div>`).join('');render();}
+function filter(c){ACTIVE=c;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.innerText==c));render();}
+function render(){let list=ACTIVE=='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat==ACTIVE);
+document.getElementById('grid').innerHTML=list.map(p=>`
+<div class="card">
+${p.image?`<img src="/static/${p.image}" onerror="this.style.display='none'">`:`<div style="font-size:32px">🧼</div>`}
+<div style="font-size:12px;font-weight:bold;height:32px;margin-top:6px">${p.name}</div>
+<div class="price">KES ${p.price}</div>
+<button class="btn" onclick="add(${p.id})">ADD</button>
+</div>`).join('');}
+function add(id){let p=PRODUCTS.find(x=>x.id==id);let c=CART.find(x=>x.id==id);if(c)c.qty++;else CART.push({...p,qty:1});update();}
+function update(){document.getElementById('cnt').innerText=CART.reduce((s,i)=>s+i.qty,0);document.getElementById('total').innerText=CART.reduce((s,i)=>s+i.qty*i.price,0);}
+async function pay(){let phone=document.getElementById('phone').value;let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);
+if(!phone||!CART.length)return alert('Add items + phone');let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});alert(JSON.stringify(await r.json()));}
+load();
 </script></body></html>
