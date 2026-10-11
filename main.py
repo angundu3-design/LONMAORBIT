@@ -10,9 +10,9 @@ USERS = {
  "Mongelah": {"username":"Mongelah","email":"mongelah@lonmaorbit.co.ke","password":"1234"},
 }
 
-# ===== LONMA MART PRODUCTS - WITH CODES & COMMENTS - ARRANGED FOR SALE =====
+# ===== LONMA MART 21 PRODUCTS WITH CODES + COMMENTS - SALE ARRANGED =====
 PRODUCTS = [
- # --- FOOD: COOKING OILS ON SALE (Fresh Fri + Salit) ---
+ # FOOD: COOKING OILS ON SALE (Fresh Fri + Salit)
  {"id":42,"name":"Fresh Fri Cooking Oil 5L","price":1250,"cat":"Food","stock":40,"image":"","code":"FF-5L-001","comment":"Fresh Fri 5Ltrs Cooking - Flagship economy jumbo - ON SALE"},
  {"id":32,"name":"Fresh Fri Cooking Oil 2L","price":650,"cat":"Food","stock":60,"image":"","code":"FF-2L-002","comment":"Best seller 2L family size"},
  {"id":43,"name":"Fresh Fri Cooking Oil 3L","price":850,"cat":"Food","stock":50,"image":"","code":"FF-3L-003","comment":"Mid size 3L popular"},
@@ -21,23 +21,23 @@ PRODUCTS = [
  {"id":45,"name":"Salit Cooking Oil 3L","price":850,"cat":"Food","stock":45,"image":"","code":"SLT-3L-006","comment":"Salit 3L"},
  {"id":46,"name":"Salit Cooking Oil 2L","price":620,"cat":"Food","stock":55,"image":"","code":"SLT-2L-007","comment":"Salit 2L value pack"},
 
- # --- TOILETRIES: DETREX SOAP RANGE ON SALE ---
- {"id":33,"name":"Detrex Citronella 110g","price":60,"cat":"Toiletries","stock":200,"image":"","code":"DTX-CIT-008","comment":"Detrex Citronella - Mosquito repellent soap"},
+ # TOILETRIES: DETREX SOAP RANGE ON SALE
+ {"id":33,"name":"Detrex Citronella 110g","price":60,"cat":"Toiletries","stock":200,"image":"","code":"DTX-CIT-008","comment":"Detrex Citronella - Mosquito repellent"},
  {"id":35,"name":"Detrex Pine 110g","price":60,"cat":"Toiletries","stock":200,"image":"","code":"DTX-PINE-009","comment":"Detrex Pine - Fresh forest"},
  {"id":37,"name":"Detrex Cool Mint 110g","price":60,"cat":"Toiletries","stock":200,"image":"","code":"DTX-MINT-010","comment":"Detrex Cool Mint - Cooling"},
  {"id":39,"name":"Detrex Aloe Vera 110g","price":60,"cat":"Toiletries","stock":200,"image":"","code":"DTX-ALOE-011","comment":"Detrex Aloe Vera - Soothing skin"},
  {"id":47,"name":"Detrex Lemon 110g","price":60,"cat":"Toiletries","stock":200,"image":"","code":"DTX-LEM-012","comment":"Detrex Lemon - Citrus fresh"},
  {"id":48,"name":"Detrex Original 110g","price":60,"cat":"Toiletries","stock":200,"image":"","code":"DTX-ORG-013","comment":"Detrex Original classic"},
 
- # --- TOILETRIES: DIVA & SAWA ON SALE ---
- {"id":38,"name":"Diva Anti-Dandruff 250ml","price":280,"cat":"Toiletries","stock":90,"image":"","code":"DVA-DAND-014","comment":"Diva Anti-Dandruff - From your link"},
+ # TOILETRIES: DIVA & SAWA ON SALE
+ {"id":38,"name":"Diva Anti-Dandruff 250ml","price":280,"cat":"Toiletries","stock":90,"image":"","code":"DVA-DAND-014","comment":"Diva Anti-Dandruff"},
  {"id":40,"name":"Diva Anti-Breakage & Growth 250ml","price":300,"cat":"Toiletries","stock":90,"image":"","code":"DVA-BRK-015","comment":"Diva Anti-Breakage for growth"},
  {"id":49,"name":"Diva Conditioning 250ml","price":280,"cat":"Toiletries","stock":90,"image":"","code":"DVA-COND-016","comment":"Diva Conditioning shampoo"},
  {"id":34,"name":"Sawa Lotion For Men 250ml","price":280,"cat":"Toiletries","stock":80,"image":"","code":"SWA-MEN-017","comment":"Sawa Lotion For Men"},
  {"id":50,"name":"Sawa Lotion For Women 250ml","price":280,"cat":"Toiletries","stock":80,"image":"","code":"SWA-WOM-018","comment":"Sawa Lotion For Women"},
  {"id":51,"name":"Sawa Soap 200g","price":70,"cat":"Toiletries","stock":150,"image":"","code":"SWA-SOAP-019","comment":"Sawa bathing soap"},
 
- # --- OTHER CATEGORIES ---
+ # OTHER
  {"id":1,"name":"Rice 2kg Pishori","price":280,"cat":"Food","stock":100,"image":"","code":"FD-RICE-020","comment":"Pishori rice"},
  {"id":26,"name":"Water 1L","price":50,"cat":"Drinks","stock":300,"image":"","code":"DR-WAT-021","comment":"Water"},
 ]
@@ -107,7 +107,7 @@ async def stk_push(req: Request):
     if phone.startswith("7"):
         phone = "254" + phone
     if not CONSUMER_KEY:
-        return {"ok": True, "msg": "DEMO MODE", "phone": phone, "amount": amount}
+        return {"ok": True, "msg":"DEMO MODE", "phone": phone, "amount": amount}
     try:
         token_data = http_get("https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials", auth=(CONSUMER_KEY, CONSUMER_SECRET))
         token = token_data.get("access_token")
