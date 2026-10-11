@@ -2,39 +2,46 @@
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LONMA MART</title>
 <style>
-body{background:#0f1115;color:white;font-family:sans-serif;margin:0;padding:10px;padding-bottom:140px}
-.tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 0}
-.tab{background:#2a2e38;padding:8px 16px;border-radius:20px;cursor:pointer;white-space:nowrap}
+body{background:#0f1115;color:white;font-family:sans-serif;margin:0;padding:10px;padding-bottom:150px}
+h1{color:#2fb5c8;text-align:center}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 0;scrollbar-width:none}
+.tab{background:#2a2e38;padding:8px 16px;border-radius:20px;cursor:pointer;white-space:nowrap;font-size:14px}
 .tab.active{background:#2fb5c8;color:#000;font-weight:bold}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .card{background:#1a1d24;border-radius:16px;padding:10px;text-align:center;border:1px solid #2a2e38}
-.card img{width:100%;height:110px;object-fit:contain;background:white;border-radius:10px}
+.card img{width:100%;height:120px;object-fit:contain;background:#fff;border-radius:10px;padding:4px}
+.name{font-size:12px;font-weight:bold;height:34px;margin-top:6px;overflow:hidden}
 .price{color:#2fb5c8;font-weight:bold;margin:6px 0}
-.btn{background:#2fb5c8;color:#000;border:0;padding:8px;width:100%;border-radius:8px;font-weight:bold}
+.btn{background:#2fb5c8;color:#000;border:0;padding:8px;width:100%;border-radius:8px;font-weight:bold;cursor:pointer}
 #cart{position:fixed;bottom:0;left:0;right:0;background:#1a1d24;padding:12px;border-top:2px solid #2fb5c8}
 </style></head><body>
-<h1 style="color:#2fb5c8;text-align:center">LONMA MART</h1>
+<h1>LONMA MART</h1>
 <div class="tabs" id="tabs"></div>
 <div class="grid" id="grid"></div>
 <div id="cart">
 <div>Cart: <span id="cnt">0</span> items - KES <span id="total">0</span></div>
 <input id="phone" placeholder="Customer 07xx" style="width:100%;padding:10px;margin:8px 0;border-radius:8px;border:0">
-<button class="btn" onclick="pay()" style="background:#00c853;color:white">PAY WITH M-PESA</button>
+<button class="btn" onclick="pay()" style="background:#00c853;color:#fff;font-size:16px">PAY WITH M-PESA</button>
 </div>
 <script>
 let PRODUCTS=[],CART=[],ACTIVE='All';
-async function load(){let r=await fetch('/api/products');PRODUCTS=await r.json();
+async function load(){
+let r=await fetch('/api/products');PRODUCTS=await r.json();
 let cats=['All',...new Set(PRODUCTS.map(p=>p.cat))];
-document.getElementById('tabs').innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filter('${c}')">${c}</div>`).join('');render();}
+document.getElementById('tabs').innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filter('${c}')">${c}</div>`).join('');
+render();
+}
 function filter(c){ACTIVE=c;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.innerText==c));render();}
-function render(){let list=ACTIVE=='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat==ACTIVE);
+function render(){
+let list=ACTIVE=='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat==ACTIVE);
 document.getElementById('grid').innerHTML=list.map(p=>`
 <div class="card">
-${p.image?`<img src="/static/${p.image}" onerror="this.style.display='none'">`:`<div style="font-size:32px">🧼</div>`}
-<div style="font-size:12px;font-weight:bold;height:32px;margin-top:6px">${p.name}</div>
+${p.image?`<img src="/static/${p.image}" onerror="this.src='https://via.placeholder.com/150?text=${encodeURIComponent(p.name)}'">`:`<div style="font-size:40px">📦</div>`}
+<div class="name">${p.name}</div>
 <div class="price">KES ${p.price}</div>
 <button class="btn" onclick="add(${p.id})">ADD</button>
-</div>`).join('');}
+</div>`).join('');
+}
 function add(id){let p=PRODUCTS.find(x=>x.id==id);let c=CART.find(x=>x.id==id);if(c)c.qty++;else CART.push({...p,qty:1});update();}
 function update(){document.getElementById('cnt').innerText=CART.reduce((s,i)=>s+i.qty,0);document.getElementById('total').innerText=CART.reduce((s,i)=>s+i.qty*i.price,0);}
 async function pay(){let phone=document.getElementById('phone').value;let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);
