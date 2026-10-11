@@ -1,14 +1,42 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LONMA ORBIT</title><style>*{box-sizing:border-box;margin:0;font-family:system-ui}body{background:#080a0a;min-height:100vh;display:flex;align-items:center;justify-content:center}.card{width:100%;max-width:420px;background:#111314;border:1px solid #1a2d2e;border-radius:28px;padding:28px 22px;margin:20px}.logo{width:86px;height:86px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;overflow:hidden;border:3px solid #1490a3}.logo img{width:100%;height:100%;object-fit:cover}input{width:100%;padding:14px;border-radius:12px;background:#0c0f10;border:1px solid #212525;color:#fff;margin-bottom:12px;outline:none}.btn{width:100%;padding:14px;border-radius:12px;background:#1490a3;color:#fff;border:none;font-weight:800;cursor:pointer}.termsLink{color:#1490a3;text-decoration:underline;cursor:pointer}#termsPage{position:fixed;top:0;left:0;width:100%;height:100%;background:#080a0a;z-index:1000;display:none;overflow:auto;padding:20px}.termsBox{max-width:700px;margin:20px auto;background:#111314;border:1px solid #1a2d2e;border-radius:18px;padding:22px;color:#c9d1d1;line-height:24px}</style></head><body>
+
 <div class="card" id="loginCard">
-  <div class="logo"><img src="/static/logo.png"></div>
-  <h1 style="text-align:center;color:#fff;letter-spacing:4px;font-size:24px">LONMA ORBIT</h1>
-  <div style="text-align:center;color:#1490a3;letter-spacing:4px;font-size:11px;margin:6px 0 18px">SIGNING & CREATING OS</div>
-  <input id="user" placeholder="Username">
-  <input id="pass" type="password" placeholder="Password">
-  <div style="display:flex;align-items:flex-start;gap:10px;color:#8a9a9a;font-size:13px;margin:8px 0 18px;line-height:18px">
-    <input type="checkbox" id="agree" checked style="width:18px;height:18px;margin:0">
-    <label for="agree">I agree to <span class="termsLink" onclick="openTerms()">Terms & Conditions</span></label>
-  </div>
-  <button class="btn" onclick="doLogin()">LOGIN →</button>
-  <div style="margin-top:16px;text-align:center;color:#3a4040;font-size:11px">Website: <a href="https://app.lonmaorbit.co.ke" style="color:#1490a3">app.lonmaorbit.co.ke</a> • <span onclick="openTerms()" style="color:#1490a3;cursor:pointer;text-decoration:underline">Terms</span></div>
-  <div style="text-align:center;margin-top:14px;font-size:11px;color:#3a4040">© 2026 LONMA ORBIT</div>
+<div class="logo"><img src="/static/logo.png" onerror="this.style.display='none'"></div>
+<h1 style="text-align:center;color:#fff;letter-spacing:4px">LONMA ORBIT</h1>
+<div style="text-align:center;color:#1490a3;letter-spacing:4px;font-size:11px;margin:6px 0 22px">SIGNING & CREATING OS</div>
+
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+
+<div style="display:flex;gap:10px;color:#8a9a9a;font-size:13px;margin:4px 0 18px">
+<input type="checkbox" id="agree" checked style="width:18px;height:18px;margin:0">
+<label for="agree">I agree to <span class="termsLink" onclick="openTerms()">Terms & Conditions</span></label>
 </div>
+
+<button class="btn" onclick="doLogin()">LOGIN →</button>
+
+<div style="text-align:center;margin-top:18px;font-size:11px;color:#5a6060">
+Website: <a href="https://app.lonmaorbit.co.ke" style="color:#1490a3">app.lonmaorbit.co.ke</a> • <span class="termsLink" onclick="openTerms()">Terms</span><br><br>© 2026 LONMA ORBIT
+</div>
+</div>
+
+<div id="termsPage"><div class="termsBox">
+<h2 style="color:#fff">Terms & Conditions</h2><small style="color:#7a8a9a">app.lonmaorbit.co.ke | Last Updated: 11 Oct 2026</small><hr style="margin:14px 0;border-color:#1a2d2e">
+<p style="font-size:14px">By using <a href="https://app.lonmaorbit.co.ke" style="color:#1490a3">app.lonmaorbit.co.ke</a> you agree to LONMA ORBIT OS Terms. POS, Voice & Video Calls, multi-outlet management (Isibania, Migori, Sirare, Warehouse) for business use only. Data stored securely. Governing Law: Kenya. Contact via lonmaorbit.co.ke</p>
+<br><button class="btn" onclick="closeTerms()">✓ I Agree</button><br><br><button onclick="closeTerms()" style="width:100%;padding:12px;border-radius:12px;background:#0c0f10;border:1px solid #1f2a2a;color:#8a9a9a">Close</button>
+</div></div>
+
+<script>
+function openTerms(){document.getElementById('termsPage').style.display='block'}
+function closeTerms(){document.getElementById('termsPage').style.display='none';document.getElementById('agree').checked=true}
+function doLogin(){
+let u=document.getElementById('user').value.trim();
+let p=document.getElementById('pass').value.trim();
+if(!document.getElementById('agree').checked)return alert('Agree to Terms at app.lonmaorbit.co.ke');
+if((u==='admin'&&p==='Lonma@2026')||(u==='cashier1'&&p==='1234')||(u==='outlet1'&&p==='1234')){
+localStorage.setItem('lo_user',u);
+window.location.href='/pos.html';
+}else alert('Invalid login');
+}
+</script>
+</body></html>
