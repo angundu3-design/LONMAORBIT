@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LONMA MART</title>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LONMA ORBIT - SHOP SAVE DELIVER</title>
 <style>
-body{background:#0f1115;color:white;font-family:sans-serif;margin:0;padding:10px;padding-bottom:160px}
+body{background:#0f1115;color:white;font-family:sans-serif;margin:0;padding:10px;padding-bottom:170px}
 .logo{background:#0f8fa8;border-radius:16px;padding:14px;margin:10px 0;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px}
 .logo-icon{width:52px;height:52px;background:white;color:#0f8fa8;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px}
 .logo-text{font-weight:900;font-size:22px}.logo-text span{font-weight:400;font-size:10px;display:block}
@@ -11,35 +11,75 @@ body{background:#0f1115;color:white;font-family:sans-serif;margin:0;padding:10px
 .card{background:#1a1d24;border-radius:16px;padding:10px;text-align:center;border:1px solid #2a2e38;position:relative}
 .card.sale{border:2px solid gold}
 .badge{position:absolute;top:6px;left:6px;background:gold;color:black;font-size:9px;font-weight:900;padding:3px 6px;border-radius:6px}
-.name{font-size:12px;font-weight:bold;height:34px;margin-top:8px;overflow:hidden}
-.price{color:#0f8fa8;font-weight:bold;margin:4px 0}
-.code{font-size:9px;color:#888}.comment{font-size:9px;color:#aaa;height:22px;overflow:hidden}
-.btn{background:#0f8fa8;color:#fff;border:0;padding:8px;width:100%;border-radius:8px;font-weight:bold;margin-top:4px}
-#cart{position:fixed;bottom:0;left:0;right:0;background:#1a1d24;padding:12px;border-top:2px solid #0f8fa8}
+.name{font-size:12px;font-weight:bold;min-height:34px;margin-top:8px}
+.price{color:#0f8fa8;font-weight:bold;margin:4px 0;font-size:16px}
+.code{font-size:9px;color:#888}.comment{font-size:9px;color:#aaa;min-height:22px;margin:2px 0}
+.btn{background:#0f8fa8;color:#fff;border:0;padding:10px;width:100%;border-radius:10px;font-weight:bold;margin-top:4px;cursor:pointer}
+#cart{position:fixed;bottom:0;left:0;right:0;background:#1a1d24;padding:12px;border-top:2px solid #0f8fa8;z-index:99}
+#cart input{width:100%;padding:12px;border-radius:8px;border:0;margin:8px 0;box-sizing:border-box}
 </style></head><body>
 <div class="logo"><div class="logo-icon">LO</div><div class="logo-text">LONMA ORBIT<span>SHOP • SAVE • DELIVER</span></div></div>
-<div class="tabs" id="tabs"></div><div class="grid" id="grid"></div>
-<div id="cart"><div>Cart: <span id="cnt">0</span> - KES <span id="total">0</span></div>
-<input id="phone" placeholder="07xx" style="width:100%;padding:10px;margin:8px 0;border-radius:8px;border:0">
-<button class="btn" onclick="pay()" style="background:#00c853;font-size:16px">PAY M-PESA</button></div>
+<div class="tabs" id="tabs"></div>
+<div class="grid" id="grid"></div>
+
+<div id="cart">
+<div style="display:flex;justify-content:space-between;font-weight:bold"><span>Cart: <span id="cnt">0</span> items</span><span>KES <span id="total">0</span></span></div>
+<input id="phone" placeholder="Enter M-Pesa Number 07xx..." type="tel">
+<button class="btn" onclick="pay()" style="background:#00c853;font-size:16px">PAY M-PESA</button>
+</div>
+
 <script>
 let PRODUCTS=[],CART=[],ACTIVE='All';
-async function load(){let r=await fetch('/api/products');PRODUCTS=await r.json();
-let cats=['All',...new Set(PRODUCTS.map(p=>p.cat))];
-document.getElementById('tabs').innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filter('${c}')">${c}</div>`).join('');render();}
+async function load(){
+ let r=await fetch('/api/products');
+ PRODUCTS=await r.json();
+ let cats=['All',...new Set(PRODUCTS.map(p=>p.cat))];
+ document.getElementById('tabs').innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filter('${c}')">${c}</div>`).join('');
+ render();
+}
 function filter(c){ACTIVE=c;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.innerText==c));render();}
 function render(){
-let list=ACTIVE=='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat==ACTIVE);
-document.getElementById('grid').innerHTML=list.map(p=>{
-let isSale=p.code&&(p.code.startsWith('FF')||p.code.startsWith('DTX')||p.code.startsWith('SLT'));
-return `<div class="card ${isSale?'sale':''}">${isSale?'<div class="badge">SALE</div>':''}
-<div style="font-size:36px">📦</div><div class="name">${p.name}</div>
-<div class="price">KES ${p.price}</div>
-<div class="code">${p.code||''}</div><div class="comment">${p.comment||''}</div>
-<button class="btn" onclick="add(${p.id})">ADD</button></div>`}).join('');}
-function add(id){let p=PRODUCTS.find(x=>x.id==id);let c=CART.find(x=>x.id==id);if(c)c.qty++;else CART.push({...p,qty:1});update();}
-function update(){document.getElementById('cnt').innerText=CART.reduce((s,i)=>s+i.qty,0);document.getElementById('total').innerText=CART.reduce((s,i)=>s+i.qty*i.price,0);}
-async function pay(){let phone=document.getElementById('phone').value;let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);
-if(!phone||!CART.length)return alert('Add items + phone');let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});alert(JSON.stringify(await r.json()));}
+ let list=ACTIVE=='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat==ACTIVE);
+ // SALE first
+ list = list.sort((a,b)=>{
+   let sa = a.code&&(a.code.startsWith('FF')||a.code.startsWith('SLT')||a.code.startsWith('DTX'))?0:1;
+   let sb = b.code&&(b.code.startsWith('FF')||b.code.startsWith('SLT')||b.code.startsWith('DTX'))?0:1;
+   return sa-sb;
+ });
+ document.getElementById('grid').innerHTML=list.map(p=>{
+  let isSale=p.code&&(p.code.startsWith('FF')||p.code.startsWith('DTX')||p.code.startsWith('SLT'));
+  return `<div class="card ${isSale?'sale':''}">${isSale?'<div class="badge">SALE</div>':''}
+   <div style="font-size:40px">📦</div>
+   <div class="name">${p.name}</div>
+   <div class="price">KES ${p.price}</div>
+   <div class="code">${p.code||''}</div>
+   <div class="comment">${p.comment||''}</div>
+   <button class="btn" onclick="add(${p.id})">ADD</button>
+  </div>`;
+ }).join('');
+}
+function add(id){
+ let p=PRODUCTS.find(x=>x.id==id);
+ let c=CART.find(x=>x.id==id);
+ if(c)c.qty++;else CART.push({...p,qty:1});
+ update();
+}
+function update(){
+ document.getElementById('cnt').innerText=CART.reduce((s,i)=>s+i.qty,0);
+ document.getElementById('total').innerText=CART.reduce((s,i)=>s+i.qty*i.price,0);
+}
+async function pay(){
+ let phone=document.getElementById('phone').value;
+ let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);
+ if(!phone||!CART.length)return alert('Add items + enter M-Pesa number');
+ let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});
+ let data=await r.json();
+ if(data.msg=="DEMO MODE"){
+   alert(`✅ ORDER RECEIVED!\n\nAmount: KES ${data.amount}\nPhone: ${data.phone}\n\nIn DEMO mode - Add M-Pesa keys to go LIVE.\nYour order: ${CART.map(i=>i.name).join(', ')}`);
+ } else {
+   alert(`✅ M-Pesa Prompt Sent to ${data.phone}!\nCheck phone & enter PIN`);
+ }
+}
 load();
-</script></body></html>
+</script>
+</body></html>
