@@ -1,21 +1,27 @@
-<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LONMA MART</title>
 <style>
 body{background:#0f1115;color:white;font-family:sans-serif;margin:0;padding:10px;padding-bottom:150px}
-h1{color:#2fb5c8;text-align:center}
 .tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 0}
 .tab{background:#2a2e38;padding:8px 16px;border-radius:20px;cursor:pointer;white-space:nowrap}
-.tab.active{background:#2fb5c8;color:#000;font-weight:bold}
+.tab.active{background:#0f8fa8;color:#fff;font-weight:bold}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .card{background:#1a1d24;border-radius:16px;padding:10px;text-align:center;border:1px solid #2a2e38}
 .card img{width:100%;height:120px;object-fit:contain;background:#fff;border-radius:10px;padding:4px}
 .name{font-size:12px;font-weight:bold;height:34px;margin-top:6px;overflow:hidden}
-.price{color:#2fb5c8;font-weight:bold;margin:6px 0}
-.btn{background:#2fb5c8;color:#000;border:0;padding:8px;width:100%;border-radius:8px;font-weight:bold}
-#cart{position:fixed;bottom:0;left:0;right:0;background:#1a1d24;padding:12px;border-top:2px solid #2fb5c8}
-</style></head><body>
-<h1>LONMA MART</h1>
-<div style="background:white;border-radius:12px;padding:8px;margin:10px 0;text-align:center">
+.price{color:#0f8fa8;font-weight:bold;margin:6px 0}
+.btn{background:#0f8fa8;color:#fff;border:0;padding:8px;width:100%;border-radius:8px;font-weight:bold}
+#cart{position:fixed;bottom:0;left:0;right:0;background:#1a1d24;padding:12px;border-top:2px solid #0f8fa8}
+</style>
+</head>
+<body>
+<div style="background:#0f8fa8;border-radius:16px;padding:0;margin:10px 0;text-align:center;overflow:hidden">
+<img src="/static/lonma_orbit_logo.png" style="width:100%;max-width:380px;object-fit:contain;display:block">
+</div>
+<div style="background:white;border-radius:12px;padding:8px;margin:0 0 10px 0;text-align:center">
 <img src="https://pwani.net/backend/storage/about/certifications/highlights/CB3TgJ0fPJCy8SeGKQbztnttRUn6er3VkQVQmSzv.png" style="width:100%;max-width:400px;object-fit:contain">
 <div style="color:#000;font-size:10px;margin-top:4px;font-weight:bold">✓ Genuine Pwani Products • ISO Certified</div>
 </div>
@@ -28,14 +34,22 @@ h1{color:#2fb5c8;text-align:center}
 </div>
 <script>
 let PRODUCTS=[],CART=[],ACTIVE='All';
-async function load(){let r=await fetch('/api/products');PRODUCTS=await r.json();
+async function load(){
+let r=await fetch('/api/products');
+PRODUCTS=await r.json();
 let cats=['All',...new Set(PRODUCTS.map(p=>p.cat))];
-document.getElementById('tabs').innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filter('${c}')">${c}</div>`).join('');render();}
-function filter(c){ACTIVE=c;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.innerText==c));render();}
+document.getElementById('tabs').innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filter('${c}')">${c}</div>`).join('');
+render();
+}
+function filter(c){
+ACTIVE=c;
+document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.innerText==c));
+render();
+}
 function render(){
 let list=ACTIVE=='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat==ACTIVE);
 document.getElementById('grid').innerHTML=list.map(p=>{
-let imgSrc = p.image? (p.image.startsWith('http')? p.image : '/static/'+p.image) : '';
+let imgSrc=p.image?(p.image.startsWith('http')?p.image:'/static/'+p.image):'';
 return `<div class="card">
 ${imgSrc?`<img src="${imgSrc}" onerror="this.src='https://via.placeholder.com/150?text=${encodeURIComponent(p.name)}'">`:`<div style="font-size:40px">📦</div>`}
 <div class="name">${p.name}</div>
@@ -43,9 +57,24 @@ ${imgSrc?`<img src="${imgSrc}" onerror="this.src='https://via.placeholder.com/15
 <button class="btn" onclick="add(${p.id})">ADD</button>
 </div>`}).join('');
 }
-function add(id){let p=PRODUCTS.find(x=>x.id==id);let c=CART.find(x=>x.id==id);if(c)c.qty++;else CART.push({...p,qty:1});update();}
-function update(){document.getElementById('cnt').innerText=CART.reduce((s,i)=>s+i.qty,0);document.getElementById('total').innerText=CART.reduce((s,i)=>s+i.qty*i.price,0);}
-async function pay(){let phone=document.getElementById('phone').value;let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);
-if(!phone||!CART.length)return alert('Add items + phone');let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});alert(JSON.stringify(await r.json()));}
+function add(id){
+let p=PRODUCTS.find(x=>x.id==id);
+let c=CART.find(x=>x.id==id);
+if(c)c.qty++;else CART.push({...p,qty:1});
+update();
+}
+function update(){
+document.getElementById('cnt').innerText=CART.reduce((s,i)=>s+i.qty,0);
+document.getElementById('total').innerText=CART.reduce((s,i)=>s+i.qty*i.price,0);
+}
+async function pay(){
+let phone=document.getElementById('phone').value;
+let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);
+if(!phone||!CART.length)return alert('Add items + phone');
+let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});
+alert(JSON.stringify(await r.json()));
+}
 load();
-</script></body></html>
+</script>
+</body>
+</html>
