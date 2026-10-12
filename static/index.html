@@ -2,14 +2,14 @@
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>LONMA ORBIT</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0a0a0a;color:white;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center;min-height:100vh}
+*{box-sizing:border-box}body{margin:0;background:#0a0a0a;color:white;font-family:-apple-system,sans-serif;display:flex;justify-content:center;min-height:100vh}
 .app{width:100%;max-width:420px;background:#101010;min-height:100vh;padding:20px;display:flex;flex-direction:column;position:relative}
 .header{text-align:center;padding:25px 0 10px}
 .logo-circle{width:120px;height:120px;border-radius:50%;margin:0 auto;display:block;object-fit:cover;box-shadow:0 0 30px rgba(20,151,176,.6);background:#1497b0;border:3px solid #1497b0}
 .brand{font-weight:900;font-size:26px;letter-spacing:3px;margin-top:16px}.sub{color:#1497b0;font-size:11px;letter-spacing:4px;margin-top:6px;font-weight:700}
-.form{margin-top:20px}.label{font-size:11px;color:#888;font-weight:700;letter-spacing:1px;margin:18px 0 8px 4px}
 .input-wrap input{width:100%;padding:16px;border-radius:14px;border:0;background:#e8edf5;color:#111;font-size:16px;outline:none}
 .btn{width:100%;padding:18px;background:#1497b0;border:0;border-radius:14px;color:white;font-weight:900;font-size:15px;cursor:pointer;margin-top:15px}
+.label{font-size:11px;color:#888;font-weight:700;letter-spacing:1px;margin:18px 0 8px 4px}
 .check{display:flex;align-items:center;gap:10px;margin:20px 0;font-size:13px;color:#aaa}.check input{width:18px;height:18px;accent-color:#1497b0}.check a{color:#1497b0}
 .footer{text-align:center;margin-top:auto;padding-top:30px;color:#555;font-size:11px}
 #shop{display:none}.shop-head{display:flex;align-items:center;gap:10px;padding:10px 0}.shop-head img{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #1497b0}
@@ -18,11 +18,9 @@
 .card{background:#1a1a1a;border-radius:16px;padding:10px;text-align:center;border:1px solid #222;position:relative;overflow:hidden}
 .card.sale{border:2px solid gold;box-shadow:0 0 12px rgba(255,215,0,.3)}.badge{position:absolute;top:6px;left:6px;background:gold;color:black;font-size:8px;font-weight:900;padding:3px 7px;border-radius:6px;z-index:2}
 .prod-img{width:100%;height:95px;object-fit:cover;border-radius:10px;background:#222;display:block}
-.name{font-size:11px;font-weight:700;min-height:32px;margin-top:8px;line-height:13px}.price{color:#1497b0;font-weight:900;font-size:13px;margin-top:4px}.code{font-size:8px;color:#666;background:#111;padding:2px 5px;border-radius:4px;margin-top:4px;display:inline-block}.comment{font-size:8px;color:#aaa;margin-top:3px}
+.name{font-size:11px;font-weight:700;min-height:32px;margin-top:8px;line-height:13px}.price{color:#1497b0;font-weight:900;font-size:13px;margin-top:4px}.code{font-size:8px;color:#666;background:#111;padding:2px 5px;border-radius:4px;margin-top:4px;display:inline-block}
 .btn-add{background:#1497b0;color:white;border:0;padding:9px;width:100%;border-radius:10px;font-weight:900;margin-top:8px;cursor:pointer;font-size:11px}
 #cart{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;background:#1a1a1a;padding:14px;border-top:2px solid #1497b0;z-index:50;box-shadow:0 -5px 20px rgba(0,0,0,.5)}#cart input{width:100%;padding:13px;border-radius:10px;border:0;margin:8px 0;background:#2a2a2a;color:white;outline:none}
-
-/* FLOATING BOT - FIXED */
 #botBtn{position:fixed;bottom:115px;right:18px;width:64px;height:64px;background:#1497b0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(20,151,176,.7);z-index:9999;animation:floatBot 2.2s ease-in-out infinite;border:2px solid white}
 @keyframes floatBot{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 #botBox{position:fixed;bottom:190px;right:18px;width:86%;max-width:360px;height:440px;background:#1e1e1e;border-radius:18px;border:2px solid #1497b0;display:none;flex-direction:column;z-index:9998;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.7)}
@@ -32,20 +30,20 @@
 .botInput{display:flex;padding:10px;background:#0f0f0f;gap:8px;align-items:center}.botInput input{flex:1;padding:13px 16px;border-radius:24px;border:0;background:#2a2a2a;color:white;outline:none;font-size:14px}.botInput button{background:#1497b0;border:0;border-radius:50%;width:42px;height:42px;color:white;font-weight:900;font-size:16px;cursor:pointer}
 </style></head><body>
 <div class="app" id="loginPage">
-  <div class="header"><img src="/static/logo.png" class="logo-circle"><div class="brand">LONMA ORBIT</div><div class="sub">SHOP • SAVE • DELIVER</div></div>
-  <div class="form"><div class="label">USERNAME OR EMAIL</div><div class="input-wrap"><input id="username" value="Mongelah"></div><div class="label">PASSWORD</div><div class="input-wrap"><input id="password" type="password" placeholder="••••••••"></div><div class="check"><input type="checkbox" id="terms" checked><label>I agree to <a href="#">Terms</a></label></div><button class="btn" onclick="doLogin()">LOGIN →</button></div>
-  <div class="footer">app.lonmaorbit.co.ke • © 2026</div>
+<div class="header"><img src="/static/logo.png" class="logo-circle"><div class="brand">LONMA ORBIT</div><div class="sub">SHOP • SAVE • DELIVER</div></div>
+<div class="form"><div class="label">USERNAME OR EMAIL</div><div class="input-wrap"><input id="username" value="Mongelah"></div><div class="label">PASSWORD</div><div class="input-wrap"><input id="password" type="password" placeholder="••••••••"></div><div class="check"><input type="checkbox" checked><label>I agree to <a href="#">Terms</a></label></div><button class="btn" onclick="doLogin()">LOGIN →</button></div>
+<div class="footer">app.lonmaorbit.co.ke • © 2026</div>
 </div>
 <div class="app" id="shop">
-  <div class="shop-head"><img src="/static/logo.png"><div><b>LONMA ORBIT</b><div style="font-size:9px;color:#1497b0">SHOP • SAVE • DELIVER</div></div><div style="margin-left:auto;color:#888;font-size:11px;cursor:pointer;background:#1e1e1e;padding:6px 12px;border-radius:20px" onclick="logout()">Logout</div></div>
-  <div class="tabs" id="tabs"></div><div class="grid" id="grid" style="padding-bottom:180px"></div>
-  <div id="cart"><div style="display:flex;justify-content:space-between;font-weight:900"><span>🛒 <span id="cnt">0</span> items</span><span>KES <span id="total">0</span></span></div><input id="phone" placeholder="M-Pesa 07xx..." type="tel"><button class="btn-add" style="background:#00c853;font-size:13px;padding:13px" onclick="pay()">PAY M-PESA 💳</button></div>
+<div class="shop-head"><img src="/static/logo.png"><div><b>LONMA ORBIT</b><div style="font-size:9px;color:#1497b0">SHOP • SAVE • DELIVER</div></div><div style="margin-left:auto;color:#888;font-size:11px;cursor:pointer;background:#1e1e1e;padding:6px 12px;border-radius:20px" onclick="logout()">Logout</div></div>
+<div class="tabs" id="tabs"></div><div class="grid" id="grid" style="padding-bottom:180px"></div>
+<div id="cart"><div style="display:flex;justify-content:space-between;font-weight:900"><span>🛒 <span id="cnt">0</span> items</span><span>KES <span id="total">0</span></span></div><input id="phone" placeholder="M-Pesa 07xx..." type="tel"><button class="btn-add" style="background:#00c853;font-size:13px;padding:13px" onclick="pay()">PAY M-PESA 💳</button></div>
 </div>
 <div id="botBtn" onclick="toggleBot()">🤖</div>
 <div id="botBox">
-  <div class="botHead"><span>🤖 LONMA Bot</span><span style="cursor:pointer;font-size:20px" onclick="toggleBot()">✕</span></div>
-  <div class="botMsgs" id="botMsgs"><div class="msg bot">👋 Habari Mongelah! SALE: Fresh Fri 5L KES 850, Salt 2kg 180, Detox 1200. Ask me codes!</div></div>
-  <div class="botInput"><input id="botInput" placeholder="Ask about price, codes..." onkeypress="if(event.key=='Enter')sendBot()"><button onclick="sendBot()">➤</button></div>
+<div class="botHead"><span>🤖 LONMA Bot</span><span style="cursor:pointer;font-size:20px" onclick="toggleBot()">✕</span></div>
+<div class="botMsgs" id="botMsgs"><div class="msg bot">👋 Habari! SALE: Fresh Fri, Salt, Detox. Ask me codes!</div></div>
+<div class="botInput"><input id="botInput" placeholder="Ask about price..." onkeypress="if(event.key=='Enter')sendBot()"><button onclick="sendBot()">➤</button></div>
 </div>
 <script>
 let PRODUCTS=[],CART=[],ACTIVE='All';
@@ -54,21 +52,13 @@ function logout(){shop.style.display='none';loginPage.style.display='flex';}
 async function loadShop(){let r=await fetch('/api/products');PRODUCTS=await r.json();let cats=['All',...new Set(PRODUCTS.map(p=>p.cat))];tabs.innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filterCat('${c}')">${c}</div>`).join('');render();}
 function filterCat(c){ACTIVE=c;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.innerText==c));render();}
 function render(){
- let list=ACTIVE=='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat==ACTIVE);
- list=list.sort((a,b)=>{
-  let sa=a.code&&(a.code.startsWith('FF')||a.code.startsWith('SLT')||a.code.startsWith('DTX'))?0:1;
-  let sb=b.code&&(b.code.startsWith('FF')||b.code.startsWith('SLT')||b.code.startsWith('DTX'))?0:1;
-  return sa-sb;
- });
- grid.innerHTML=list.map(p=>{
-  let isSale=p.code&&(p.code.startsWith('FF')||p.code.startsWith('DTX')||p.code.startsWith('SLT'));
-  let img = p.img || 'https://via.placeholder.com/200/1497b0/ffffff?text=LONMA';
-  return `<div class="card ${isSale?'sale':''}">${isSale?'<div class="badge">SALE</div>':''}<img src="${img}" class="prod-img" loading="lazy" onerror="this.src='https://via.placeholder.com/200/1497b0/ffffff?text=LONMA'"><div class="name">${p.name}</div><div class="price">KES ${p.price}</div><div class="code">${p.code||''}</div><div class="comment">${p.comment||''}</div><button class="btn-add" onclick="addCart(${p.id})">ADD TO CART</button></div>`;
- }).join('');
+let list=ACTIVE=='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat==ACTIVE);
+list=list.sort((a,b)=>{let sa=a.code&&(a.code.startsWith('FF')||a.code.startsWith('SLT')||a.code.startsWith('DTX'))?0:1;let sb=b.code&&(b.code.startsWith('FF')||b.code.startsWith('SLT')||b.code.startsWith('DTX'))?0:1;return sa-sb;});
+grid.innerHTML=list.map(p=>{let isSale=p.code&&(p.code.startsWith('FF')||p.code.startsWith('DTX')||p.code.startsWith('SLT'));let img=p.img||'https://via.placeholder.com/200/1497b0/ffffff?text=LONMA';return `<div class="card ${isSale?'sale':''}">${isSale?'<div class="badge">SALE</div>':''}<img src="${img}" class="prod-img" loading="lazy" onerror="this.src='https://via.placeholder.com/200/1497b0/ffffff?text=LONMA'"><div class="name">${p.name}</div><div class="price">KES ${p.price}</div><div class="code">${p.code}</div><button class="btn-add" onclick="addCart(${p.id})">ADD TO CART</button></div>`;}).join('');
 }
 function addCart(id){let p=PRODUCTS.find(x=>x.id==id);let c=CART.find(x=>x.id==id);if(c)c.qty++;else CART.push({...p,qty:1});upd();}
 function upd(){cnt.innerText=CART.reduce((s,i)=>s+i.qty,0);total.innerText=CART.reduce((s,i)=>s+i.qty*i.price,0);}
-async function pay(){let phone=document.getElementById('phone').value;let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);if(!phone||!CART.length)return alert('Add items + phone');let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});let d=await r.json();alert(`✅ ORDER RECEIVED KES ${d.amount} to ${d.phone}`);CART=[];upd();}
+async function pay(){let phone=document.getElementById('phone').value;let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);if(!phone||!CART.length)return alert('Add items + phone');let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});let d=await r.json();alert(`✅ ORDER KES ${d.amount}`);CART=[];upd();}
 function toggleBot(){let b=botBox;b.style.display=b.style.display=='flex'?'none':'flex';if(b.style.display=='flex'){botInput.focus();botMsgs.scrollTop=botMsgs.scrollHeight;}}
 async function sendBot(){let inp=botInput;let txt=inp.value.trim();if(!txt)return;botMsgs.innerHTML+=`<div class="msg user">${txt}</div>`;inp.value='';botMsgs.scrollTop=botMsgs.scrollHeight;let r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({msg:txt})});let d=await r.json();setTimeout(()=>{botMsgs.innerHTML+=`<div class="msg bot">${d.reply.replace(/\n/g,'<br>')}</div>`;botMsgs.scrollTop=botMsgs.scrollHeight;},300);}
 </script>
