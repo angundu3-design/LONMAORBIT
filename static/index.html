@@ -37,28 +37,58 @@
 <div class="app" id="shop">
 <div class="shop-head"><img src="/static/logo.png"><div><b>LONMA ORBIT</b><div style="font-size:9px;color:#1497b0">SHOP • SAVE • DELIVER</div></div><div style="margin-left:auto;color:#888;font-size:11px;cursor:pointer;background:#1e1e1e;padding:6px 12px;border-radius:20px" onclick="logout()">Logout</div></div>
 <div class="tabs" id="tabs"></div><div class="grid" id="grid" style="padding-bottom:180px"></div>
-<div id="cart"><div style="display:flex;justify-content:space-between;font-weight:900"><span>🛒 <span id="cnt">0</span> items</span><span>KES <span id="total">0</span></span></div><input id="phone" placeholder="M-Pesa 07xx..." type="tel"><button class="btn-add" style="background:#00c853;font-size:13px;padding:13px" onclick="pay()">PAY M-PESA 💳</button></div>
+<div id="cart"><div style="display:flex;justify-content:space-between;font-weight:900"><span>🛒 <span id="cnt">0</span> items</span><span>KES <span id="total">0</span></span></div><input id="phone" placeholder="M-Pesa 07xx..." type="tel" value="0707780807"><button class="btn-add" style="background:#00c853;font-size:13px;padding:13px" onclick="pay()">PAY M-PESA 💳</button></div>
 </div>
 <div id="botBtn" onclick="toggleBot()">🤖</div>
 <div id="botBox">
 <div class="botHead"><span>🤖 LONMA Bot</span><span style="cursor:pointer;font-size:20px" onclick="toggleBot()">✕</span></div>
-<div class="botMsgs" id="botMsgs"><div class="msg bot">👋 Habari! SALE: Fresh Fri, Salt, Detox. Ask me codes!</div></div>
+<div class="botMsgs" id="botMsgs"><div class="msg bot">👋 Habari! Click ADD TO CART first, then PAY.</div></div>
 <div class="botInput"><input id="botInput" placeholder="Ask about price..." onkeypress="if(event.key=='Enter')sendBot()"><button onclick="sendBot()">➤</button></div>
 </div>
 <script>
 let PRODUCTS=[],CART=[],ACTIVE='All';
 async function doLogin(){let u=username.value.trim();let p=password.value.trim();let r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});let d=await r.json();if(d.ok){loginPage.style.display='none';shop.style.display='block';loadShop();}else alert('Use Mongelah / 1234');}
 function logout(){shop.style.display='none';loginPage.style.display='flex';}
-async function loadShop(){let r=await fetch('/api/products');PRODUCTS=await r.json();let cats=['All',...new Set(PRODUCTS.map(p=>p.cat))];tabs.innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filterCat('${c}')">${c}</div>`).join('');render();}
+async function loadShop(){let r=await fetch('/api/products');PRODUCTS=await r.json();let cats=['All',...new Set(PRODUCTS.map(p=>p.cat))];tabs.innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filterCat('${c}')">${c}</div>`).join('');render();upd();}
 function filterCat(c){ACTIVE=c;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.innerText==c));render();}
 function render(){
 let list=ACTIVE=='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat==ACTIVE);
 list=list.sort((a,b)=>{let sa=a.code&&(a.code.startsWith('FF')||a.code.startsWith('SLT')||a.code.startsWith('DTX'))?0:1;let sb=b.code&&(b.code.startsWith('FF')||b.code.startsWith('SLT')||b.code.startsWith('DTX'))?0:1;return sa-sb;});
 grid.innerHTML=list.map(p=>{let isSale=p.code&&(p.code.startsWith('FF')||p.code.startsWith('DTX')||p.code.startsWith('SLT'));let img=p.img||'https://via.placeholder.com/200/1497b0/ffffff?text=LONMA';return `<div class="card ${isSale?'sale':''}">${isSale?'<div class="badge">SALE</div>':''}<img src="${img}" class="prod-img" loading="lazy" onerror="this.src='https://via.placeholder.com/200/1497b0/ffffff?text=LONMA'"><div class="name">${p.name}</div><div class="price">KES ${p.price}</div><div class="code">${p.code}</div><button class="btn-add" onclick="addCart(${p.id})">ADD TO CART</button></div>`;}).join('');
 }
-function addCart(id){let p=PRODUCTS.find(x=>x.id==id);let c=CART.find(x=>x.id==id);if(c)c.qty++;else CART.push({...p,qty:1});upd();}
-function upd(){cnt.innerText=CART.reduce((s,i)=>s+i.qty,0);total.innerText=CART.reduce((s,i)=>s+i.qty*i.price,0);}
-async function pay(){let phone=document.getElementById('phone').value;let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);if(!phone||!CART.length)return alert('Add items + phone');let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});let d=await r.json();alert(`✅ ORDER KES ${d.amount}`);CART=[];upd();}
+function addCart(id){
+ let p=PRODUCTS.find(x=>x.id==id);
+ if(!p) return alert('Product not found');
+ let c=CART.find(x=>x.id==id);
+ if(c) c.qty++;
+ else CART.push({...p,qty:1});
+ upd();
+ navigator.vibrate && navigator.vibrate(50);
+ let btn=event.target; let old=btn.innerText; btn.innerText='✅ ADDED'; btn.style.background='#00c853';
+ setTimeout(()=>{btn.innerText=old; btn.style.background='#1497b0';},800);
+}
+function upd(){
+ let count=CART.reduce((s,i)=>s+i.qty,0);
+ let sum=CART.reduce((s,i)=>s+i.qty*i.price,0);
+ document.getElementById('cnt').innerText=count;
+ document.getElementById('total').innerText=sum;
+ localStorage.setItem('lonma_cart', JSON.stringify(CART));
+}
+async function pay(){
+ let phone=document.getElementById('phone').value.trim();
+ if(CART.length==0){ alert('Step 1: Click ADD TO CART on products first!\n\nYour cart is empty.'); return; }
+ if(!phone || phone.length<10){ alert('Enter M-Pesa phone 07xx...'); return; }
+ let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);
+ try{
+  let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});
+  let d=await r.json();
+  alert(`✅ ORDER RECEIVED\nKES ${d.amount}\nPhone: ${d.phone}\n\nWe will call you for delivery.`);
+  CART=[]; upd(); localStorage.removeItem('lonma_cart');
+ }catch(e){ alert('Network error, try again'); }
+}
+(function(){
+ try{ let saved=localStorage.getItem('lonma_cart'); if(saved){ CART=JSON.parse(saved); } }catch(e){}
+})();
 function toggleBot(){let b=botBox;b.style.display=b.style.display=='flex'?'none':'flex';if(b.style.display=='flex'){botInput.focus();botMsgs.scrollTop=botMsgs.scrollHeight;}}
 async function sendBot(){let inp=botInput;let txt=inp.value.trim();if(!txt)return;botMsgs.innerHTML+=`<div class="msg user">${txt}</div>`;inp.value='';botMsgs.scrollTop=botMsgs.scrollHeight;let r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({msg:txt})});let d=await r.json();setTimeout(()=>{botMsgs.innerHTML+=`<div class="msg bot">${d.reply.replace(/\n/g,'<br>')}</div>`;botMsgs.scrollTop=botMsgs.scrollHeight;},300);}
 </script>
