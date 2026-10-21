@@ -1,61 +1,92 @@
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from fastapi import FastAPI, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+app = FastAPI(title="LONMA ORBIT App")
 
-class Login(BaseModel):
- username: str
- password: str
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class Pay(BaseModel):
- phone: str
- amount: int
+# FIX for Render HEAD check + root
+@app.api_route("/", methods=["GET", "HEAD"])
+async def home():
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>LONMA ORBIT - App</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body{margin:0;font-family:Inter,sans-serif;background:#0a0a0a;color:#fff;text-align:center}
+            .hero{padding:80px 20px;background:linear-gradient(rgba(0,0,0,0.7),rgba(0,0,0,0.7)),url('https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3');background-size:cover}
+            h1{font-size:48px;letter-spacing:4px;margin:0}
+            p{color:#aaa;font-size:18px}
+            .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;padding:40px;max-width:1000px;margin:auto}
+            .card{background:#151515;padding:30px;border-radius:16px;border:1px solid #222}
+            .card h3{margin-top:0}
+            a.btn{display:inline-block;background:#fff;color:#000;padding:14px 28px;border-radius:30px;text-decoration:none;font-weight:700;margin:10px}
+            @media(max-width:700px){.grid{grid-template-columns:1fr} h1{font-size:32px}}
+        </style>
+    </head>
+    <body>
+        <div class="hero">
+            <h1>LONMA ORBIT</h1>
+            <p>Premium PA Hire • Luxury Tour Guide • Podcast & Content That Earns</p>
+            <a class="btn" href="#book">BOOK NOW</a>
+            <a class="btn" href="https://wa.me/254700000000" style="background:transparent;color:#fff;border:1px solid #fff">WhatsApp</a>
+        </div>
 
-class Chat(BaseModel):
- msg: str
+        <div class="grid">
+            <div class="card">
+                <h3>🔊 PA FOR HIRE</h3>
+                <p>From 2 speakers to full concert rig. Nairobi + countrywide.</p>
+                <a class="btn" href="https://lonmaorbit.co.ke">View Packages</a>
+            </div>
+            <div class="card">
+                <h3>🌍 LUXURY TOUR GUIDE</h3>
+                <p>Maasai Mara, Diani, Naivasha. Private, curated.</p>
+                <a class="btn" href="#book">Book Tour</a>
+            </div>
+            <div class="card">
+                <h3>🎙️ CREATING FOR EARNING</h3>
+                <p>Marlon K Podcast + Content Monetization.</p>
+                <a class="btn" href="https://lonmaorbit.co.ke">Listen</a>
+            </div>
+        </div>
 
-PRODUCTS = [
- {"id":1,"name":"Fresh Fri 5L","price":850,"code":"FF-5L-001","cat":"Cooking Oil","img":"https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400"},
- {"id":2,"name":"Fresh Fri 2L","price":400,"code":"FF-2L-002","cat":"Cooking Oil","img":"https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400"},
- {"id":3,"name":"Fresh Fri 1L","price":220,"code":"FF-1L-003","cat":"Cooking Oil","img":"https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400"},
- {"id":4,"name":"Salt 2kg","price":180,"code":"SLT-2KG-005","cat":"Groceries","img":"https://images.unsplash.com/photo-1584305574586-0a9579496bb7?w=400"},
- {"id":5,"name":"Salt 1kg","price":100,"code":"SLT-1KG-006","cat":"Groceries","img":"https://images.unsplash.com/photo-1584305574586-0a9579496bb7?w=400"},
- {"id":6,"name":"Detox Tea","price":1200,"code":"DTX-001","cat":"Wellness","img":"https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=400"},
- {"id":7,"name":"Green Tea","price":250,"code":"DTX-020","cat":"Wellness","img":"https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=400"},
- {"id":8,"name":"Sawa Men 500ML","price":450,"code":"SWA-MEN-017","cat":"Body Lotion","img":"https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400"},
- {"id":9,"name":"Sawa Women","price":450,"code":"SWA-WOM-018","cat":"Body Lotion","img":"https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400"},
- {"id":10,"name":"Sawa 250ML","price":250,"code":"SWA-250-019","cat":"Body Lotion","img":"https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400"},
- {"id":11,"name":"Sugar 2kg","price":320,"code":"SUG-010","cat":"Groceries","img":"https://images.unsplash.com/photo-1587049352851-8d4e89133924?w=400"},
- {"id":12,"name":"Rice 5kg","price":650,"code":"RIC-011","cat":"Groceries","img":"https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400"},
-]
+        <div id="book" style="padding:60px 20px;max-width:500px;margin:auto">
+            <h2>Inquire Now</h2>
+            <form action="/inquire" method="post">
+                <input name="name" placeholder="Your Name" required style="width:100%;padding:14px;margin:8px 0;border-radius:8px;border:1px solid #333;background:#111;color:#fff">
+                <input name="phone" placeholder="Phone / WhatsApp" required style="width:100%;padding:14px;margin:8px 0;border-radius:8px;border:1px solid #333;background:#111;color:#fff">
+                <select name="service" style="width:100%;padding:14px;margin:8px 0;border-radius:8px;border:1px solid #333;background:#111;color:#fff">
+                    <option>PA System Hire</option>
+                    <option>Luxury Tour</option>
+                    <option>Podcast / Content</option>
+                </select>
+                <textarea name="message" placeholder="Tell us dates, location, guests..." style="width:100%;padding:14px;margin:8px 0;border-radius:8px;border:1px solid #333;background:#111;color:#fff;height:100px"></textarea>
+                <button type="submit" style="width:100%;padding:14px;background:#fff;color:#000;border:0;border-radius:8px;font-weight:700">SEND INQUIRY</button>
+            </form>
+            <p style="margin-top:20px;font-size:14px;color:#666">Will be sent to info@lonmaorbit.co.ke</p>
+        </div>
+    </body>
+    </html>
+    """)
 
-@app.post("/api/login")
-def login(d: Login):
- if (d.username=="Mongelah" and d.password=="1234") or (d.username=="admin" and d.password=="Lonma@2026"):
-  return {"ok":True}
- return {"ok":False}
+@app.post("/inquire")
+async def inquire(name: str = Form(...), phone: str = Form(...), service: str = Form(...), message: str = Form(...)):
+    # Here you will later connect Zoho email / WhatsApp
+    print(f"NEW LEAD: {name} - {phone} - {service} - {message}")
+    # Redirect to WhatsApp with prefilled message
+    text = f"Hello LONMA ORBIT, I am {name}. I need {service}. {message}. My number {phone}"
+    import urllib.parse
+    wa_link = f"https://wa.me/254700000000?text={urllib.parse.quote(text)}"
+    return RedirectResponse(wa_link, status_code=303)
 
-@app.get("/api/products")
-def products():
- return sorted(PRODUCTS, key=lambda p: 0 if p["code"].startswith(("FF","SLT","DTX")) else 1)
-
-@app.post("/api/stk")
-def stk(d: Pay):
- return {"msg":"DEMO","phone":d.phone,"amount":d.amount}
-
-@app.post("/api/chat")
-def chat(d: Chat):
- q=d.msg.lower()
- if "code" in q:
-  return {"reply":"Codes: FF=Fresh Fri, SLT=Salt, DTX=Detox, SWA=Sawa"}
- if "sale" in q:
-  return {"reply":"SALE: Fresh Fri 5L 850, 2L 400, Salt 180, Detox 1200"}
- return {"reply":"Ask about products, prices, codes, delivery."}
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-@app.get("/")
-def root():
- return FileResponse("static/index.html")
+@app.get("/health")
+async def health():
+    return {"status": "ok", "domain": "app.lonmaorbit.co.ke"}
