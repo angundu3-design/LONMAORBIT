@@ -1,95 +1,106 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>LONMA ORBIT</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LONMA ORBIT - Online Supermarket</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0a0a0a;color:white;font-family:-apple-system,sans-serif;display:flex;justify-content:center;min-height:100vh}
-.app{width:100%;max-width:420px;background:#101010;min-height:100vh;padding:20px;display:flex;flex-direction:column;position:relative}
-.header{text-align:center;padding:25px 0 10px}
-.logo-circle{width:120px;height:120px;border-radius:50%;margin:0 auto;display:block;object-fit:cover;box-shadow:0 0 30px rgba(20,151,176,.6);background:#1497b0;border:3px solid #1497b0}
-.brand{font-weight:900;font-size:26px;letter-spacing:3px;margin-top:16px}.sub{color:#1497b0;font-size:11px;letter-spacing:4px;margin-top:6px;font-weight:700}
-.input-wrap input{width:100%;padding:16px;border-radius:14px;border:0;background:#e8edf5;color:#111;font-size:16px;outline:none}
-.btn{width:100%;padding:18px;background:#1497b0;border:0;border-radius:14px;color:white;font-weight:900;font-size:15px;cursor:pointer;margin-top:15px}
-.label{font-size:11px;color:#888;font-weight:700;letter-spacing:1px;margin:18px 0 8px 4px}
-.check{display:flex;align-items:center;gap:10px;margin:20px 0;font-size:13px;color:#aaa}.check input{width:18px;height:18px;accent-color:#1497b0}.check a{color:#1497b0}
-.footer{text-align:center;margin-top:auto;padding-top:30px;color:#555;font-size:11px}
-#shop{display:none}.shop-head{display:flex;align-items:center;gap:10px;padding:10px 0}.shop-head img{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #1497b0}
-.tabs{display:flex;gap:8px;overflow-x:auto;padding:14px 0;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tab{background:#1e1e1e;padding:10px 18px;border-radius:20px;white-space:nowrap;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #222}.tab.active{background:#1497b0;color:white;border-color:#1497b0}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.card{background:#1a1a1a;border-radius:16px;padding:10px;text-align:center;border:1px solid #222;position:relative;overflow:hidden}
-.card.sale{border:2px solid gold;box-shadow:0 0 12px rgba(255,215,0,.3)}.badge{position:absolute;top:6px;left:6px;background:gold;color:black;font-size:8px;font-weight:900;padding:3px 7px;border-radius:6px;z-index:2}
-.prod-img{width:100%;height:95px;object-fit:cover;border-radius:10px;background:#222;display:block}
-.name{font-size:11px;font-weight:700;min-height:32px;margin-top:8px;line-height:13px}.price{color:#1497b0;font-weight:900;font-size:13px;margin-top:4px}.code{font-size:8px;color:#666;background:#111;padding:2px 5px;border-radius:4px;margin-top:4px;display:inline-block}
-.btn-add{background:#1497b0;color:white;border:0;padding:9px;width:100%;border-radius:10px;font-weight:900;margin-top:8px;cursor:pointer;font-size:11px}
-#cart{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;background:#1a1a1a;padding:14px;border-top:2px solid #1497b0;z-index:50;box-shadow:0 -5px 20px rgba(0,0,0,.5)}#cart input{width:100%;padding:13px;border-radius:10px;border:0;margin:8px 0;background:#2a2a2a;color:white;outline:none}
-#botBtn{position:fixed;bottom:115px;right:18px;width:64px;height:64px;background:#1497b0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(20,151,176,.7);z-index:9999;animation:floatBot 2.2s ease-in-out infinite;border:2px solid white}
-@keyframes floatBot{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-#botBox{position:fixed;bottom:190px;right:18px;width:86%;max-width:360px;height:440px;background:#1e1e1e;border-radius:18px;border:2px solid #1497b0;display:none;flex-direction:column;z-index:9998;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.7)}
-.botHead{background:#1497b0;padding:14px;font-weight:900;display:flex;justify-content:space-between;align-items:center;font-size:14px}
-.botMsgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:#121212}
-.msg{padding:10px 14px;border-radius:14px;max-width:82%;font-size:13px;line-height:16px}.msg.bot{background:#2a2a2a;align-self:flex-start}.msg.user{background:#1497b0;align-self:flex-end;color:white}
-.botInput{display:flex;padding:10px;background:#0f0f0f;gap:8px;align-items:center}.botInput input{flex:1;padding:13px 16px;border-radius:24px;border:0;background:#2a2a2a;color:white;outline:none;font-size:14px}.botInput button{background:#1497b0;border:0;border-radius:50%;width:42px;height:42px;color:white;font-weight:900;font-size:16px;cursor:pointer}
-</style></head><body>
-<div class="app" id="loginPage">
-<div class="header"><img src="/static/logo.png" class="logo-circle"><div class="brand">LONMA ORBIT</div><div class="sub">SHOP • SAVE • DELIVER</div></div>
-<div class="form"><div class="label">USERNAME OR EMAIL</div><div class="input-wrap"><input id="username" value="Mongelah"></div><div class="label">PASSWORD</div><div class="input-wrap"><input id="password" type="password" placeholder="••••••••"></div><div class="check"><input type="checkbox" checked><label>I agree to <a href="#">Terms</a></label></div><button class="btn" onclick="doLogin()">LOGIN →</button></div>
-<div class="footer">app.lonmaorbit.co.ke • © 2026</div>
+:root{--teal:#0096B2;--dark:#0a2e36;--light:#f4fbfc}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Outfit',system-ui}
+body{background:var(--light);color:var(--dark)}
+header{background:var(--teal);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;font-weight:900;letter-spacing:2px;font-size:18px}
+.logo img{height:48px;background:#fff;border-radius:10px;padding:3px}
+nav a{color:#fff;text-decoration:none;margin-left:20px;font-weight:600}
+.hero{padding:60px 24px;text-align:center;background:linear-gradient(180deg,var(--teal) 0%, #00b8d8 100%);color:#fff}
+.hero h1{font-size:48px;line-height:1.1;max-width:600px;margin:0 auto 16px}
+.hero h1 span{color:#ffeb3b}
+.hero p{opacity:.9;max-width:500px;margin:0 auto 28px;font-size:18px}
+.btn{background:#fff;color:var(--teal);padding:16px 32px;border-radius:100px;font-weight:800;text-decoration:none;display:inline-block;border:0;cursor:pointer}
+.btn-dark{background:var(--dark);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:24px;max-width:1100px;margin:0 auto}
+.card{background:#fff;border-radius:20px;padding:18px;text-align:center;box-shadow:0 8px 30px rgba(0,150,178,.08)}
+.card .emoji{font-size:40px} .price{color:var(--teal);font-weight:900;font-size:20px;margin:8px 0}
+.card button{width:100%;background:var(--teal);color:#fff;border:0;padding:12px;border-radius:12px;font-weight:700}
+.auth-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}
+.auth-box{background:#fff;padding:32px;border-radius:24px;width:90%;max-width:400px}
+.auth-box input{width:100%;padding:14px;margin:8px 0;border-radius:12px;border:1px solid #ddd}
+#cartBar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:14px 22px;border-radius:100px;display:flex;gap:16px;align-items:center;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+footer{text-align:center;padding:40px;color:#888}
+@media(min-width:800px){.grid{grid-template-columns:repeat(4,1fr)} .hero h1{font-size:64px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><img src="logo.jpg" alt="LO"> LONMA ORBIT</div>
+  <nav>
+    <a href="#" onclick="openAuth()">Sign In</a>
+    <a href="https://app.lonmaorbit.co.ke" style="background:#fff;color:#0096B2;padding:8px 18px;border-radius:20px">Open App</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <h1>Groceries Delivered in <span>60 Mins</span> in Nairobi</h1>
+  <p>Unga, Milk, Bread, Cooking Oil at supermarket prices. Pay with M-Pesa.</p>
+  <a href="https://app.lonmaorbit.co.ke" class="btn">🛒 Start Shopping - KSh 180 Unga</a>
+  <p style="margin-top:14px;font-size:14px">📍 Serving Eastlands, CBD, Westlands</p>
+</section>
+
+<div style="max-width:1100px;margin:0 auto;padding:0 24px;display:flex;gap:10px;overflow:auto">
+  <button onclick="filterCat('all')" style="padding:10px 18px;border-radius:20px;border:0;background:#111;color:#fff">All</button>
+  <button onclick="filterCat('Flour')" style="padding:10px 18px;border-radius:20px;border:1px solid #ddd;background:#fff">Flour</button>
+  <button onclick="filterCat('Dairy')" style="padding:10px 18px;border-radius:20px;border:1px solid #ddd;background:#fff">Dairy</button>
+  <button onclick="filterCat('Bakery')" style="padding:10px 18px;border-radius:20px;border:1px solid #ddd;background:#fff">Bakery</button>
 </div>
-<div class="app" id="shop">
-<div class="shop-head"><img src="/static/logo.png"><div><b>LONMA ORBIT</b><div style="font-size:9px;color:#1497b0">SHOP • SAVE • DELIVER</div></div><div style="margin-left:auto;color:#888;font-size:11px;cursor:pointer;background:#1e1e1e;padding:6px 12px;border-radius:20px" onclick="logout()">Logout</div></div>
-<div class="tabs" id="tabs"></div><div class="grid" id="grid" style="padding-bottom:180px"></div>
-<div id="cart"><div style="display:flex;justify-content:space-between;font-weight:900"><span>🛒 <span id="cnt">0</span> items</span><span>KES <span id="total">0</span></span></div><input id="phone" placeholder="M-Pesa 07xx..." type="tel" value="0707780807"><button class="btn-add" style="background:#00c853;font-size:13px;padding:13px" onclick="pay()">PAY M-PESA 💳</button></div>
+
+<div class="grid" id="grid"></div>
+
+<div id="cartBar">
+  <span id="count">0 items</span><b id="total">KSh 0</b>
+  <button onclick="checkout()" style="background:#fff;color:#111;padding:8px 18px;border-radius:20px;border:0;font-weight:800">Checkout</button>
 </div>
-<div id="botBtn" onclick="toggleBot()">🤖</div>
-<div id="botBox">
-<div class="botHead"><span>🤖 LONMA Bot</span><span style="cursor:pointer;font-size:20px" onclick="toggleBot()">✕</span></div>
-<div class="botMsgs" id="botMsgs"><div class="msg bot">👋 Habari! Click ADD TO CART first, then PAY.</div></div>
-<div class="botInput"><input id="botInput" placeholder="Ask about price..." onkeypress="if(event.key=='Enter')sendBot()"><button onclick="sendBot()">➤</button></div>
+
+<div class="auth-modal" id="authModal">
+  <div class="auth-box">
+    <h2>Sign In to LONMA</h2>
+    <input id="name" placeholder="Full Name">
+    <input id="phone" placeholder="07xx M-Pesa">
+    <button onclick="saveUser()" class="btn btn-dark" style="width:100%;margin-top:12px">Continue</button>
+    <p style="text-align:center;margin-top:14px"><a href="#" onclick="closeAuth()">Close</a></p>
+  </div>
 </div>
+
+<footer>© 2026 LONMA ORBIT • app.lonmaorbit.co.ke • Made in Nairobi</footer>
+
 <script>
-let PRODUCTS=[],CART=[],ACTIVE='All';
-async function doLogin(){let u=username.value.trim();let p=password.value.trim();let r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});let d=await r.json();if(d.ok){loginPage.style.display='none';shop.style.display='block';loadShop();}else alert('Use Mongelah / 1234');}
-function logout(){shop.style.display='none';loginPage.style.display='flex';}
-async function loadShop(){let r=await fetch('/api/products');PRODUCTS=await r.json();let cats=['All',...new Set(PRODUCTS.map(p=>p.cat))];tabs.innerHTML=cats.map(c=>`<div class="tab ${c==ACTIVE?'active':''}" onclick="filterCat('${c}')">${c}</div>`).join('');render();upd();}
-function filterCat(c){ACTIVE=c;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.innerText==c));render();}
-function render(){
-let list=ACTIVE=='All'?PRODUCTS:PRODUCTS.filter(p=>p.cat==ACTIVE);
-list=list.sort((a,b)=>{let sa=a.code&&(a.code.startsWith('FF')||a.code.startsWith('SLT')||a.code.startsWith('DTX'))?0:1;let sb=b.code&&(b.code.startsWith('FF')||b.code.startsWith('SLT')||b.code.startsWith('DTX'))?0:1;return sa-sb;});
-grid.innerHTML=list.map(p=>{let isSale=p.code&&(p.code.startsWith('FF')||p.code.startsWith('DTX')||p.code.startsWith('SLT'));let img=p.img||'https://via.placeholder.com/200/1497b0/ffffff?text=LONMA';return `<div class="card ${isSale?'sale':''}">${isSale?'<div class="badge">SALE</div>':''}<img src="${img}" class="prod-img" loading="lazy" onerror="this.src='https://via.placeholder.com/200/1497b0/ffffff?text=LONMA'"><div class="name">${p.name}</div><div class="price">KES ${p.price}</div><div class="code">${p.code}</div><button class="btn-add" onclick="addCart(${p.id})">ADD TO CART</button></div>`;}).join('');
+const PRODUCTS=[
+{id:1,name:"Unga 2kg",price:180,cat:"Flour",img:"🌾"},
+{id:2,name:"Milk 500ml",price:70,cat:"Dairy",img:"🥛"},
+{id:3,name:"Bread",price:65,cat:"Bakery",img:"🍞"},
+{id:4,name:"Oil 1L",price:320,cat:"Cooking",img:"🫒"},
+{id:5,name:"Sugar 2kg",price:310,cat:"Sugar",img:"🍬"},
+{id:6,name:"Rice 2kg",price:420,cat:"Rice",img:"🍚"},
+];
+let cart=JSON.parse(localStorage.getItem('cart')||'[]');
+function render(list=PRODUCTS){
+  document.getElementById('grid').innerHTML=list.map(p=>`
+  <div class="card" data-cat="${p.cat}">
+    <div class="emoji">${p.img}</div>
+    <h4>${p.name}</h4>
+    <div class="price">KSh ${p.price}</div>
+    <button onclick="add(${p.id})">Add to Cart</button>
+  </div>`).join(''); update();
 }
-function addCart(id){
- let p=PRODUCTS.find(x=>x.id==id);
- if(!p) return alert('Product not found');
- let c=CART.find(x=>x.id==id);
- if(c) c.qty++;
- else CART.push({...p,qty:1});
- upd();
- navigator.vibrate && navigator.vibrate(50);
- let btn=event.target; let old=btn.innerText; btn.innerText='✅ ADDED'; btn.style.background='#00c853';
- setTimeout(()=>{btn.innerText=old; btn.style.background='#1497b0';},800);
-}
-function upd(){
- let count=CART.reduce((s,i)=>s+i.qty,0);
- let sum=CART.reduce((s,i)=>s+i.qty*i.price,0);
- document.getElementById('cnt').innerText=count;
- document.getElementById('total').innerText=sum;
- localStorage.setItem('lonma_cart', JSON.stringify(CART));
-}
-async function pay(){
- let phone=document.getElementById('phone').value.trim();
- if(CART.length==0){ alert('Step 1: Click ADD TO CART on products first!\n\nYour cart is empty.'); return; }
- if(!phone || phone.length<10){ alert('Enter M-Pesa phone 07xx...'); return; }
- let amount=CART.reduce((s,i)=>s+i.qty*i.price,0);
- try{
-  let r=await fetch('/api/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});
-  let d=await r.json();
-  alert(`✅ ORDER RECEIVED\nKES ${d.amount}\nPhone: ${d.phone}\n\nWe will call you for delivery.`);
-  CART=[]; upd(); localStorage.removeItem('lonma_cart');
- }catch(e){ alert('Network error, try again'); }
-}
-(function(){
- try{ let saved=localStorage.getItem('lonma_cart'); if(saved){ CART=JSON.parse(saved); } }catch(e){}
-})();
-function toggleBot(){let b=botBox;b.style.display=b.style.display=='flex'?'none':'flex';if(b.style.display=='flex'){botInput.focus();botMsgs.scrollTop=botMsgs.scrollHeight;}}
-async function sendBot(){let inp=botInput;let txt=inp.value.trim();if(!txt)return;botMsgs.innerHTML+=`<div class="msg user">${txt}</div>`;inp.value='';botMsgs.scrollTop=botMsgs.scrollHeight;let r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({msg:txt})});let d=await r.json();setTimeout(()=>{botMsgs.innerHTML+=`<div class="msg bot">${d.reply.replace(/\n/g,'<br>')}</div>`;botMsgs.scrollTop=botMsgs.scrollHeight;},300);}
+function add(id){cart.push(PRODUCTS.find(p=>p.id==id));localStorage.setItem('cart',JSON.stringify(cart));update();document.getElementById('cartBar').style.transform='translateX(-50%) scale(1.1)';setTimeout(()=>document.getElementById('cartBar').style.transform='translateX(-50%) scale(1)',200)}
+function update(){document.getElementById('count').innerText=cart.length+' items';document.getElementById('total').innerText='KSh '+cart.reduce((s,i)=>s+i.price,0)}
+function filterCat(c){render(c=='all'?PRODUCTS:PRODUCTS.filter(p=>p.cat==c))}
+function openAuth(){document.getElementById('authModal').style.display='flex'}
+function closeAuth(){document.getElementById('authModal').style.display='none'}
+function saveUser(){localStorage.setItem('user',document.getElementById('name').value);closeAuth();alert('Welcome '+localStorage.getItem('user'))}
+function checkout(){if(cart.length==0)return alert('Cart empty');if(!localStorage.getItem('user'))return openAuth();window.location.href='https://app.lonmaorbit.co.ke'}
+render();
 </script>
-</body></html>
+</body>
+</html>
