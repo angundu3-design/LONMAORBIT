@@ -27,7 +27,7 @@ def get_user(email=None):
 def layout(body, title="LONMA"):
     return "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'><title>"+title+"</title><style>body{margin:0;font-family:system-ui;background:#f5f7f8}header{background:#0096B2;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;position:sticky;top:0;z-index:10}a{color:#fff;text-decoration:none;margin:0 6px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px 15px 90px}.card{background:#fff;padding:14px;border-radius:16px;text-align:center}button{background:#0096B2;color:#fff;border:0;padding:11px;border-radius:10px;width:100%;font-weight:700}input,select{width:100%;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #ddd}.form{max-width:600px;margin:20px auto;background:#fff;padding:24px;border-radius:20px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #eee;font-size:13px}</style></head><body><header><div style='background:#fff;color:#0096B2;padding:4px 10px;border-radius:10px;font-weight:900'>LONMA ORBIT</div><div><a href='/'>Shop</a><a href='/scan'>Scan</a><a href='/video'>Video</a><a href='/terms'>Terms</a><a href='/admin'>Admin</a></div></header>"+body+"</body></html>"
 
-@app.get("/", response_class=HTMLResponse)
+@app.api_route("/", methods=["GET","HEAD"], response_class=HTMLResponse)
 async def home(user_email: str = Cookie(default=None)):
     u = get_user(user_email)
     prod_json = json.dumps(PRODUCTS)
@@ -60,21 +60,12 @@ async def terms():
 
 @app.get("/scan", response_class=HTMLResponse)
 async def scan():
-    b = """
-<div class='form' style='text-align:center'><h1>Scan QR</h1><p>Point camera at product QR</p><div id='reader' style='width:100%'></div><div id='res' style='margin-top:15px;padding:12px;background:#e6f9fc;display:none'></div><a href='/'><button>Back</button></a></div>
-<script src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'></script>
-<script>
-function onOK(txt){document.getElementById('res').style.display='block';document.getElementById('res').innerHTML='Scanned: '+txt+'<br><a href=/?add='+txt.split('|')[0]+'><button>Add</button></a>';var id=parseInt(txt.split('|')[0]);if(!isNaN(id))window.location.href='/?add='+id;}
-var sc=new Html5QrcodeScanner('reader',{fps:10,qrbox:{width:250,height:250}},false);sc.render(onOK);
-</script>
-"""
+    b = "<div class='form' style='text-align:center'><h1>Scan QR</h1><p>Point camera at product QR</p><div id='reader' style='width:100%'></div><div id='res' style='margin-top:15px;padding:12px;background:#e6f9fc;display:none'></div><a href='/'><button>Back</button></a></div><script src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'></script><script>function onOK(txt){document.getElementById('res').style.display='block';document.getElementById('res').innerHTML='Scanned: '+txt+'<br><a href=/?add='+txt.split('|')[0]+'><button>Add</button></a>';var id=parseInt(txt.split('|')[0]);if(!isNaN(id))window.location.href='/?add='+id;}var sc=new Html5QrcodeScanner('reader',{fps:10,qrbox:{width:250,height:250}},false);sc.render(onOK);</script>"
     return HTMLResponse(layout(b, "Scan"))
 
 @app.get("/video", response_class=HTMLResponse)
 async def video():
-    b = """
-<div class='form' style='max-width:900px'><h1>Video Support</h1><p>Live support</p><div style='background:#000;border-radius:16px;overflow:hidden;height:500px'><iframe src='https://meet.jit.si/lonmaorbit-support#config.prejoinConfig.enabled=false' allow='camera; microphone; fullscreen' style='width:100%;height:100%;border:0'></iframe></div><a href='/'><button style='margin-top:15px'>Back</button></a></div>
-"""
+    b = "<div class='form' style='max-width:900px'><h1>Video Support</h1><div style='background:#000;border-radius:16px;overflow:hidden;height:500px'><iframe src='https://meet.jit.si/lonmaorbit-support' allow='camera; microphone; fullscreen' style='width:100%;height:100%;border:0'></iframe></div><a href='/'><button style='margin-top:15px'>Back</button></a></div>"
     return HTMLResponse(layout(b, "Video"))
 
 @app.get("/login", response_class=HTMLResponse)
@@ -118,31 +109,20 @@ async def admin(admin_auth: str = Cookie(default=None)):
     ph="";
     for p in PRODUCTS:
         ph+=f"<tr><td>{p['img']} {p['name']}<br><small>{p['real']}</small><br><img src='https://api.qrserver.com/v1/create-qr-code/?size=40x40&data={p['id']}'></td><td>KSh {p['price']}</td><td>{p['cat']}</td><td>{p['stock']}</td><td><form method='post' action='/admin/delete-product'><input type='hidden' name='pid' value='{p['id']}'><button style='width:auto;background:red;padding:4px 8px'>Del</button></form></td></tr>"
-    body = f"""
-<div style='max-width:1100px;margin:20px auto;padding:0 16px'><h1>Admin + QR + Video</h1>
-<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px'><div style='background:#fff;padding:16px;border-radius:12px'><h3>{len(ORDERS)}</h3><p>Orders</p></div><div style='background:#fff;padding:16px;border-radius:12px'><h3>KSh {sum(o['total'] for o in ORDERS)}</h3><p>Revenue</p></div><div style='background:#fff;padding:16px;border-radius:12px'><h3>{len(PRODUCTS)}</h3><p>Real Products</p></div></div>
-<h2>Add Real Product</h2><div class='form' style='margin:10px 0'><form method='post' action='/admin/add-product'><input name='name' placeholder='Name' required><input name='real' placeholder='Real Brand' required><input name='price' type='number' required><input name='cat' placeholder='Category' required><input name='img' placeholder='Emoji' required><input name='stock' type='number' required><button>Add</button></form></div>
-<h2>Products with QR</h2><div style='background:#fff;padding:12px;border-radius:12px;overflow:auto'><table><tr><th>Product+QR</th><th>Price</th><th>Cat</th><th>Stock</th><th>Action</th></tr>{ph}</table></div>
-<h2>Orders with QR + Video</h2><div style='background:#fff;padding:12px;border-radius:12px;overflow:auto'><table><tr><th>ID+QR</th><th>Time</th><th>Phone</th><th>Loc</th><th>Items</th><th>Total</th><th>Video</th></tr>{oh}</table></div>
-<div style='display:flex;gap:10px;margin-top:20px'><a href='/scan' style='flex:1'><button>Scan</button></a><a href='/video' style='flex:1'><button style='background:#111'>Video</button></a><a href='/terms' style='flex:1'><button style='background:#eee;color:#333'>Terms</button></a></div>
-</div>
-"""
+    body = f"<div style='max-width:1100px;margin:20px auto;padding:0 16px'><h1>Admin + QR + Video</h1><div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px'><div style='background:#fff;padding:16px;border-radius:12px'><h3>{len(ORDERS)}</h3><p>Orders</p></div><div style='background:#fff;padding:16px;border-radius:12px'><h3>KSh {sum(o['total'] for o in ORDERS)}</h3><p>Revenue</p></div><div style='background:#fff;padding:16px;border-radius:12px'><h3>{len(PRODUCTS)}</h3><p>Products</p></div></div><h2>Add Real Product</h2><div class='form' style='margin:10px 0'><form method='post' action='/admin/add-product'><input name='name' placeholder='Name' required><input name='real' placeholder='Real Brand' required><input name='price' type='number' required><input name='cat' placeholder='Category' required><input name='img' placeholder='Emoji' required><input name='stock' type='number' required><button>Add</button></form></div><h2>Products with QR</h2><div style='background:#fff;padding:12px;border-radius:12px;overflow:auto'><table><tr><th>Product+QR</th><th>Price</th><th>Cat</th><th>Stock</th><th>Action</th></tr>{ph}</table></div><h2>Orders with QR + Video</h2><div style='background:#fff;padding:12px;border-radius:12px;overflow:auto'><table><tr><th>ID+QR</th><th>Time</th><th>Phone</th><th>Loc</th><th>Items</th><th>Total</th><th>Video</th></tr>{oh}</table></div><div style='display:flex;gap:10px;margin-top:20px'><a href='/scan' style='flex:1'><button>Scan</button></a><a href='/video' style='flex:1'><button style='background:#111'>Video</button></a><a href='/terms' style='flex:1'><button style='background:#eee;color:#333'>Terms</button></a></div></div>"
     return HTMLResponse(layout(body,"Admin"))
-
 @app.post("/admin/add-product")
 async def addp(name: str = Form(...), real: str = Form(...), price: int = Form(...), cat: str = Form(...), img: str = Form(...), stock: int = Form(...), admin_auth: str = Cookie(default=None)):
     if admin_auth!="yes": return RedirectResponse("/admin/login")
     nid=max([p["id"] for p in PRODUCTS], default=0)+1
     PRODUCTS.append({"id":nid,"name":name,"real":real,"price":price,"cat":cat,"img":img,"stock":stock})
     return RedirectResponse("/admin",303)
-
 @app.post("/admin/delete-product")
 async def delp(pid: int = Form(...), admin_auth: str = Cookie(default=None)):
     if admin_auth!="yes": return RedirectResponse("/admin/login")
     global PRODUCTS
     PRODUCTS=[p for p in PRODUCTS if p["id"]!=pid]
     return RedirectResponse("/admin",303)
-
 @app.post("/mpesa/callback")
 async def cb(request: Request):
     data=await request.json()
