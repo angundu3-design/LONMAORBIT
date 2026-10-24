@@ -2,14 +2,12 @@ import os, base64, requests, sqlite3
 from datetime import datetime
 from fastapi import FastAPI, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = FastAPI(title="LONMA ORBIT")
-templates = Jinja2Templates(directory="templates")
 
 app.add_middleware(
     CORSMiddleware,
@@ -80,8 +78,8 @@ def lipa_na_mpesa(phone, amount):
     return r.json()
 
 @app.api_route("/", methods=["GET", "HEAD"])
-def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+def home():
+    return FileResponse("templates/index.html")
 
 @app.get("/health")
 def health():
@@ -115,7 +113,6 @@ async def stk_push(request: Request):
 @app.post("/mpesa/callback")
 async def mpesa_callback(request: Request):
     body = await request.json()
-    print(body)
     try:
         result = body.get("Body", {}).get("stkCallback", {})
         code = result.get("ResultCode")
@@ -127,8 +124,8 @@ async def mpesa_callback(request: Request):
                     mpesa_code = i.get("Value")
             conn.execute("UPDATE orders SET status=?, mpesa_code=? WHERE id=(SELECT MAX(id) FROM orders)", ("PAID", mpesa_code))
             conn.commit()
-    except Exception as e:
-        print(e)
+    except:
+        pass
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 @app.get("/api/orders")
@@ -140,4 +137,4 @@ def get_orders():
 
 @app.post("/login")
 def login(username: str = Form(...), password: str = Form(...)):
-    return {"username": username, "status": "success", "token": "lonma-token"}
+    return {"username": username, "status": "success"}
