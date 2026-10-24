@@ -1,44 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LONMA ORBIT</title>
 <style>
-body{font-family:Arial;background:#0a0a0a;color:#fff;margin:0}
-.header{padding:20px;text-align:center;background:#111;font-size:24px;font-weight:bold;letter-spacing:2px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;padding:20px}
-.card{background:#1a1a1a;border-radius:12px;padding:15px;text-align:center}
-.card img{width:100%;border-radius:8px}
-.btn{background:#fff;color:#000;border:none;padding:12px 20px;border-radius:25px;width:100%;margin-top:10px;font-weight:bold}
-.checkout{position:fixed;bottom:0;left:0;right:0;background:#111;padding:20px;border-top:1px solid #333}
-input{width:100%;padding:12px;border-radius:8px;border:none;margin:5px 0}
+.nav{position:fixed;top:0;width:100%;background:#0A9EBB;padding:10px 15px;display:flex;justify-content:space-between;align-items:center;z-index:100;border-bottom:1px solid rgba(255,255,255,0.2)}
+.logo{display:flex;align-items:center}
+.logo-box{width:115px;height:48px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.logo-big{font-size:36px;font-weight:900;color:#0A9EBB;font-family:Georgia,serif;line-height:1;letter-spacing:1px;margin-top:-2px}
+.logo-line{position:absolute;width:100%;height:18px;background:#fff;top:50%;left:0;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;border-top:1px solid #eee;border-bottom:1px solid #eee}
+.logo-small{font-size:7px;letter-spacing:2.5px;color:#000;font-family:Arial;font-weight:700;white-space:nowrap}
 </style>
-</head>
-<body>
-<div class="header">LONMA ORBIT</div>
-<div class="grid" id="products"></div>
-<div class="checkout">
-<input id="phone" placeholder="07xxxxxxxx">
-<input id="amount" type="number" placeholder="Amount" value="1">
-<button class="btn" onclick="pay()">PAY WITH M-PESA</button>
-<p id="status"></p>
+
+<div class="nav">
+<div class="logo"><div class="logo-box"><span class="logo-big">LO</span><div class="logo-line"><span class="logo-small">LONMA ORBIT</span></div></div></div>
+<div style="display:flex;gap:8px"><a onclick="show('login')" style="background:rgba(255,255,255,0.25);color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer">Log in</a><a onclick="show('signin')" style="background:#fff;color:#0A9EBB;padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;font-weight:bold">Sign in</a></div>
 </div>
-<script>
-async function load(){
-let r=await fetch('/api/products');let data=await r.json();
-document.getElementById('products').innerHTML=data.map(p=>`
-<div class="card"><img src="${p.image}"><h3>${p.name}</h3><p>KSh ${p.price}</p><button class="btn" onclick="document.getElementById('amount').value=${p.price}">SELECT</button></div>
-`).join('');
-}
-async function pay(){
-let phone=document.getElementById('phone').value;
-let amount=document.getElementById('amount').value;
-document.getElementById('status').innerText='Sending STK...';
-let r=await fetch('/mpesa/stkpush',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount})});
-let d=await r.json();
-document.getElementById('status').innerText=JSON.stringify(d);
-}
-load();
-</script>
-</body>
-</html>
