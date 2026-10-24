@@ -1,15 +1,20 @@
 import os, base64, requests
 from datetime import datetime
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 load_dotenv()
+
 app = FastAPI(title="LONMA ORBIT")
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# --- MPESA CONFIG - Reads from Render Env ---
 MPESA_CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY")
 MPESA_CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET")
 MPESA_SHORTCODE = os.getenv("MPESA_SHORTCODE", "174379")
@@ -23,26 +28,26 @@ else:
     BASE_URL = "https://sandbox.safaricom.co.ke"
 
 def get_mpesa_token():
+    if not MPESA_CONSUMER_KEY or not MPESA_CONSUMER_SECRET:
+        return None
     url = f"{BASE_URL}/oauth/v1/generate?grant_type=client_credentials"
     auth = base64.b64encode(f"{MPESA_CONSUMER_KEY}:{MPESA_CONSUMER_SECRET}".encode()).decode()
     headers = {"Authorization": f"Basic {auth}"}
-    r = requests.get(url, headers=headers)
-    print("TOKEN RESPONSE:", r.text)
-    return r.json().get("access_token")
+    try:
+        r = requests.get(url, headers=headers, timeout=15)
+        return r.json().get("access_token")
+    except:
+        return None
 
 def lipa_na_mpesa(phone, amount):
     token = get_mpesa_token()
     if not token:
-        return {"error": "Could not get token - check Consumer Key/Secret"}
-    
+        return {"error": "Could not get token"}
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     password_str = f"{MPESA_SHORTCODE}{MPESA_PASSKEY}{timestamp}"
     password = base64.b64encode(password_str.encode()).decode()
-    
-    # Format phone 07xx -> 2547xx
     if phone.startswith("0"):
         phone = "254" + phone[1:]
-    
     url = f"{BASE_URL}/mpesa/stkpush/v1/processrequest"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     payload = {
@@ -58,14 +63,16 @@ def lipa_na_mpesa(phone, amount):
         "AccountReference": "LONMA-ORBIT",
         "TransactionDesc": "Payment for Lonma Orbit"
     }
-    print("STK PAYLOAD:", payload)
     r = requests.post(url, json=payload, headers=headers)
-    print("STK RESPONSE:", r.text)
     return r.json()
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def home():
     return {"status": "LONMA ORBIT LIVE", "mpesa_env": MPESA_ENV, "shortcode": MPESA_SHORTCODE}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post("/mpesa/stkpush")
 async def stk_push(request: Request):
@@ -79,9 +86,9 @@ async def stk_push(request: Request):
 @app.post("/mpesa/callback")
 async def mpesa_callback(request: Request):
     body = await request.json()
-    print("=== MPESA CALLBACK RECEIVED ===")
     print(body)
-    # TODO: Save to DB, update order status to PAID
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
-# Your other routes (products, cart, orders) keep below...
+@app.post("/login")
+def login(username: str = Form(...), password: str = Form(...)):
+    return {"username": username, "status": "logged in"}
