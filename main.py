@@ -39,16 +39,16 @@ HTML = """
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root{--teal:#0A9EBB}*{box-sizing:border-box}body{margin:0;font-family:Arial;background:var(--teal);color:#fff}
-.nav{position:fixed;top:0;width:100%;background:var(--teal);padding:8px 15px;display:flex;justify-content:space-between;align-items:center;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.2)}
-.logo-img{height:52px;width:52px;border-radius:50%;background:#fff;padding:4px;object-fit:cover;display:block;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.25)}
+.nav{position:fixed;top:0;width:100%;background:var(--teal);padding:8px 15px;display:flex;justify-content:space-between;align-items:center;z-index:100}
+.logo-img{height:52px;width:52px;border-radius:50%;background:transparent;padding:0;object-fit:cover;display:block;border:none;box-shadow:none}
 .page{display:none;padding:78px 15px 110px;min-height:100vh;background:var(--teal)}.page.active{display:block}
-.card{background:#fff;color:#000;border-radius:14px;padding:15px;margin:10px 0;box-shadow:0 3px 10px rgba(0,0,0,0.1)}
+.card{background:#fff;color:#000;border-radius:14px;padding:15px;margin:10px 0}
 .btn{background:var(--teal);color:#fff;border:none;padding:12px;border-radius:25px;width:100%;font-weight:bold;margin-top:8px;cursor:pointer}
 input{width:100%;padding:12px;border-radius:8px;border:1px solid #ddd;background:#f7f7f7;margin:6px 0}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .bottom{position:fixed;bottom:0;width:100%;background:#fff;display:flex;justify-content:space-around;padding:10px;z-index:100}.bottom div{font-size:10px;color:#000;text-align:center;cursor:pointer}
 #botBtn{position:fixed;bottom:80px;right:15px;background:#fff;color:var(--teal);width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;z-index:200;box-shadow:0 4px 15px rgba(0,0,0,0.3)}
-#botBox{display:none;position:fixed;bottom:145px;right:15px;width:90%;max-width:350px;height:400px;background:#fff;border-radius:15px;z-index:200;flex-direction:column;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.3)}
+#botBox{display:none;position:fixed;bottom:145px;right:15px;width:90%;max-width:350px;height:400px;background:#fff;border-radius:15px;z-index:200;flex-direction:column;overflow:hidden}
 #botBox.open{display:flex}
 </style></head><body>
 <div class="nav">
@@ -58,12 +58,12 @@ input{width:100%;padding:12px;border-radius:8px;border:1px solid #ddd;background
 <div id="products" class="page active"><h2>LONMA ORBIT 💙</h2><div class="grid" id="plist"></div><div class="card"><input id="phone" placeholder="07xxxxxxxx"><input id="amount" type="number" placeholder="Amount"><button class="btn" onclick="pay()">PAY WITH M-PESA</button><p id="paystatus"></p></div></div>
 <div id="login" class="page"><h2>Log In</h2><div class="card"><input id="lemail" placeholder="Email"><input id="lpass" type="password" placeholder="Password"><button class="btn" onclick="login()">Log In</button><p id="lstatus"></p></div></div>
 <div id="signin" class="page"><h2>Sign Up</h2><div class="card"><input id="sname" placeholder="Full Name"><input id="semail" placeholder="Email"><input id="spass" type="password" placeholder="Password"><button class="btn" onclick="signin()">Create Account</button><p id="sstatus"></p></div></div>
-<div id="terms" class="page"><h2>Terms</h2><div class="card"><p><b>1.</b> Original LONMA products</p><p><b>2.</b> M-Pesa final</p><p><b>3.</b> Nairobi same-day delivery</p><p><b>4.</b> QR code verification</p></div></div>
+<div id="terms" class="page"><h2>Terms</h2><div class="card"><p>Original LONMA products, M-Pesa final, Nairobi same-day</p></div></div>
 <div id="locations" class="page"><h2>Locations</h2><div id="loclist"></div></div>
-<div id="scan" class="page"><h2>Code Scan</h2><div class="card"><div id="reader"></div><button class="btn" onclick="startScan()">START CAMERA</button><input id="manualcode" placeholder="LONMA-001"><button class="btn" onclick="verifyCode()">VERIFY CODE</button><p id="scanresult"></p></div></div>
+<div id="scan" class="page"><h2>Code Scan</h2><div class="card"><div id="reader"></div><button class="btn" onclick="startScan()">START CAMERA</button><input id="manualcode" placeholder="LONMA-001"><button class="btn" onclick="verifyCode()">VERIFY</button><p id="scanresult"></p></div></div>
 <div class="bottom"><div onclick="show('products')">🛍️<br>Products</div><div onclick="show('scan')">📷<br>Scan</div><div onclick="show('locations')">📍<br>Locations</div><div onclick="show('terms')">📄<br>Terms</div><div onclick="show('login')">👤<br>Account</div></div>
 <div id="botBtn" onclick="toggleBot()">🤖</div>
-<div id="botBox"><div style="padding:12px;background:#0A9EBB;color:#fff;font-weight:bold;display:flex;justify-content:space-between"><span>LO BOT</span><span onclick="toggleBot()" style="cursor:pointer">✕</span></div><div id="botMsgs" style="flex:1;overflow-y:auto;padding:10px;background:#f9f9f9"><div style="background:#fff;border:1px solid #eee;padding:10px;border-radius:12px;font-size:13px;color:#000">Welcome to LONMA ORBIT 💙 Round logo active! Ask me anything.</div></div><div style="display:flex;padding:10px;border-top:1px solid #eee;background:#fff"><input id="botInput" style="flex:1" placeholder="Ask..." onkeypress="if(event.key==='Enter')sendBot()"><button onclick="sendBot()" style="background:#0A9EBB;color:#fff;border:none;padding:12px 15px;border-radius:0 20px 20px 0">Send</button></div></div>
+<div id="botBox"><div style="padding:12px;background:#0A9EBB;color:#fff;font-weight:bold;display:flex;justify-content:space-between"><span>LO BOT</span><span onclick="toggleBot()" style="cursor:pointer">✕</span></div><div id="botMsgs" style="flex:1;overflow-y:auto;padding:10px;background:#f9f9f9"><div style="background:#fff;border:1px solid #eee;padding:10px;border-radius:12px;font-size:13px;color:#000">Welcome - No white border round logo!</div></div><div style="display:flex;padding:10px;border-top:1px solid #eee;background:#fff"><input id="botInput" style="flex:1" placeholder="Ask..." onkeypress="if(event.key==='Enter')sendBot()"><button onclick="sendBot()" style="background:#0A9EBB;color:#fff;border:none;padding:12px 15px;border-radius:0 20px 20px 0">Send</button></div></div>
 <script>
 function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active')}
 async function loadProducts(){let r=await fetch('/api/products');let d=await r.json();document.getElementById('plist').innerHTML=d.map(p=>`<div class="card"><img src="${p.image}" style="width:100%;border-radius:8px"><h4>${p.name}</h4><p>KSh ${p.price}</p><small>${p.code}</small><button class="btn" onclick="document.getElementById('amount').value=${p.price}">BUY</button></div>`).join('')}
@@ -85,10 +85,10 @@ def home():
 
 @app.get("/logo.png")
 def logo():
-    for p in ["logo.png", "static/logo.png", "./logo.png"]:
+    for p in ["logo.png", "static/logo.png"]:
         if os.path.exists(p):
             return FileResponse(p)
-    return HTMLResponse("logo.png not uploaded yet", status_code=404)
+    return HTMLResponse("no logo", status_code=404)
 
 @app.get("/api/products")
 def products():
@@ -111,14 +111,14 @@ async def signin_api(req: Request):
     data=await req.json()
     try:
         conn.execute("INSERT INTO users (email,password,name) VALUES (?,?,?)", (data.get("email"), data.get("password"), data.get("name"))); conn.commit()
-        return {"status":"ok","message":"Account created!"}
-    except: return {"status":"error","message":"Email exists"}
+        return {"status":"ok","message":"Created!"}
+    except: return {"status":"error","message":"Exists"}
 
 @app.post("/api/login")
 async def login_api(req: Request):
     data=await req.json()
     cur=conn.cursor(); cur.execute("SELECT * FROM users WHERE email=? AND password=?", (data.get("email"), data.get("password")))
-    return {"status":"ok","message":"Welcome back!"} if cur.fetchone() else {"status":"error","message":"Invalid login"}
+    return {"status":"ok","message":"Welcome!"} if cur.fetchone() else {"status":"error","message":"Invalid"}
 
 @app.post("/api/bot")
 async def bot_api(req: Request):
@@ -128,9 +128,4 @@ async def bot_api(req: Request):
 @app.post("/mpesa/stkpush")
 async def stk_push(req: Request):
     data=await req.json()
-    conn.execute("INSERT INTO orders (phone,amount,status,created) VALUES (?,?,?,?)", (data.get("phone"), data.get("amount"), "PENDING", datetime.now().isoformat())); conn.commit()
-    return {"ResponseCode":"0","msg":"MOCK STK sent to "+data.get("phone"," - configure MPESA env for real")}
-
-@app.post("/mpesa/callback")
-async def callback(req: Request):
-    return {"ResultCode":0,"ResultDesc":"Accepted"}
+    return {"ResponseCode":"0","msg":"MOCK STK to "+data.get("phone","")}
