@@ -1,7 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-import os, sqlite3, urllib.parse, json, datetime
+import os
+import sqlite3
+import urllib.parse
+import json
+import datetime
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -12,6 +16,7 @@ conn.execute("CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name 
 conn.execute("CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, order_no TEXT, name TEXT, phone TEXT, area TEXT, location TEXT, items TEXT, subtotal INTEGER, delivery INTEGER, total INTEGER, status TEXT, created TEXT)")
 cur = conn.cursor()
 cur.execute("DELETE FROM products")
+
 PRODUCTS = [
     (1, "Fresh Fri Cooking Oil 2L", 850, "LONMA-001", "Cooking Oils", 50, "Pure fortified 2L original cholesterol free family pack"),
     (2, "Detrex Citronella Soap 110g", 90, "LONMA-002", "Soaps", 120, "Anti-bacterial citronella germ protection 110g"),
@@ -23,6 +28,7 @@ PRODUCTS = [
     (8, "Diva Anti-Breakage Pomade", 250, "LONMA-008", "Pomades", 45, "Anti-breakage strengthens roots 250ml"),
     (9, "Sawa Cocoa Butter Lotion", 299, "LONMA-009", "Lotions", 30, "Cocoa butter nourishing 24Hrs"),
 ]
+
 for pid, name, price, code, cat, stock, desc in PRODUCTS:
     img = f"https://via.placeholder.com/400x300/FFFFFF/0A9EBB?text={urllib.parse.quote(name)}"
     cur.execute("INSERT INTO products VALUES (?,?,?,?,?,?,?,?)", (pid, name, price, code, img, cat, stock, desc))
@@ -229,3 +235,32 @@ async def stk(req: Request):
     except Exception as e:
         print(e)
     return {"message": f"STK KSh {d.get('amount')} sent to {d.get('phone')} Order {order_no} saved"}
+
+@app.api_route("/mpesa/callback", methods=["GET", "POST", "HEAD", "OPTIONS"])
+async def mpesa_callback(req: Request):
+    try:
+        if req.method == "POST":
+            data = await req.json()
+            print("M-PESA CALLBACK RECEIVED:", json.dumps(data)[:500])
+            body = data.get("Body", {}).get("stkCallback", {})
+            result_code = body.get("ResultCode")
+            print(f"ResultCode {result_code} Desc {body.get('ResultDesc')}")
+        else:
+            print(f"M-PESA callback {req.method} ping received from {req.client.host}")
+    except Exception as e:
+        print(f"Callback log: {e}")
+    return {"ResultCode": 0, "ResultDesc": "Accepted"}
+
+@app.api_route("/callback", methods=["GET", "POST", "HEAD"])
+async def callback_alt(req: Request):
+    print(f"Callback alt hit {req.method}")
+    return {"ResultCode": 0, "ResultDesc": "Accepted"}
+
+@app.api_route("/mpesa-callback", methods=["GET", "POST", "HEAD"])
+async def callback_alt2(req: Request):
+    print(f"Callback alt2 hit {req.method}")
+    return {"ResultCode": 0, "ResultDesc": "Accepted"}
+
+@app.get("/mpesa/callback-test")
+def callback_test():
+    return {"status": "callback live", "endpoints": ["/mpesa/callback", "/callback", "/mpesa-callback"]}
