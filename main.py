@@ -1,15 +1,22 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-import os, sqlite3, urllib.parse, json, datetime
+import os, sqlite3, urllib.parse, json, datetime, requests, base64
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+DARAJA_CONSUMER_KEY = os.getenv("DARAJA_KEY", "")
+DARAJA_CONSUMER_SECRET = os.getenv("DARAJA_SECRET", "")
+DARAJA_SHORTCODE = os.getenv("DARAJA_SHORTCODE", "174379")
+DARAJA_PASSKEY = os.getenv("DARAJA_PASSKEY", "")
+DARAJA_CALLBACK_URL = os.getenv("CALLBACK_URL", "https://app.lonmaorbit.co.ke/mpesa/callback")
+USE_PRODUCTION = os.getenv("DARAJA_ENV", "sandbox") == "production"
+
 conn = sqlite3.connect("lonma.db", check_same_thread=False)
 conn.execute("CREATE TABLE IF NOT EXISTS users (email TEXT UNIQUE, password TEXT, name TEXT)")
 conn.execute("CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT, price INTEGER, code TEXT, image TEXT, category TEXT, stock INTEGER, desc TEXT)")
-conn.execute("CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, order_no TEXT, name TEXT, phone TEXT, area TEXT, location TEXT, items TEXT, subtotal INTEGER, delivery INTEGER, total INTEGER, status TEXT, created TEXT)")
+conn.execute("CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, order_no TEXT, name TEXT, phone TEXT, area TEXT, location TEXT, items TEXT, subtotal INTEGER, delivery INTEGER, total INTEGER, status TEXT, created TEXT, mpesa_receipt TEXT, checkout_id TEXT)")
 cur = conn.cursor()
 cur.execute("DELETE FROM products")
 PRODUCTS = [
@@ -24,34 +31,79 @@ PRODUCTS = [
     (9, "Sawa Cocoa Butter Lotion", 299, "LONMA-009", "Lotions", 30, "Cocoa butter"),
 ]
 for pid, name, price, code, cat, stock, desc in PRODUCTS:
-    img = f"https://via.placeholder.com/400x300/FFFFFF/0A9EBB?text={urllib.parse.quote(name)}"
+    img = f"/static/{code}.jpg"
+    if not os.path.exists(f"static/{code}.jpg"):
+        img = f"https://via.placeholder.com/400x300/FFFFFF/0A9EBB?text={urllib.parse.quote(name)}"
     cur.execute("INSERT INTO products VALUES (?,?,?,?,?,?,?,?)", (pid, name, price, code, img, cat, stock, desc))
 conn.commit()
 
-@app.get("/mpesa/callback")
-@app.post("/mpesa/callback")
-@app.get("/callback")
-@app.post("/callback")
-@app.get("/mpesa-callback")
-@app.post("/mpesa-callback")
+def get_daraja_token():
+    try:
+        base = "https://api.safaricom.co.ke" if USE_PRODUCTION else "https://sandbox.safaricom.co.ke"
+        r = requests.get(f"{base}/oauth/v1/generate?grant_type=client_credentials", auth=(DARAJA_CONSUMER_KEY, DARAJA_CONSUMER_SECRET), timeout=10)
+        return r.json().get("access_token")
+    except:
+        return None
+
+@app.api_route("/mpesa/callback", methods=["GET", "POST"])
+@app.api_route("/callback", methods=["GET", "POST"])
+@app.api_route("/mpesa-callback", methods=["GET", "POST"])
 async def mpesa_callback(request: Request):
-    return {"ResultCode": 0, "ResultDesc": "Accepted"}
+    try:
+        data = await request.json()
+        body = data.get("Body", {})
+        stk = body.get("stkCallback", {})
+        result_code = stk.get("ResultCode")
+        checkout_id = stk.get("CheckoutRequestID", "")
+        merchant_req = stk.get("MerchantRequestID", "")
+        print(f"CALLBACK {checkout_id} Code:{result_code}")
+        if result_code == 0:
+            receipt = ""
+            for it in stk.get("CallbackMetadata", {}).get("Item", []):
+                if it.get("Name") == "MpesaReceiptNumber":
+                    receipt = it.get("Value")
+            cur = conn.cursor()
+            cur.execute("UPDATE orders SET status='PAID', mpesa_receipt=? WHERE checkout_id=? OR order_no=?", (receipt, checkout_id, checkout_id))
+            if cur.rowcount == 0:
+                cur.execute("UPDATE orders SET status='PAID', mpesa_receipt=? WHERE order_no=(SELECT order_no FROM orders WHERE status='Pending' ORDER BY id DESC LIMIT 1)", (receipt,))
+            conn.commit()
+            try:
+                cur.execute("SELECT items FROM orders WHERE mpesa_receipt=? ORDER BY id DESC LIMIT 1", (receipt,))
+                row = cur.fetchone()
+                if row and row[0]:
+                    items_list = json.loads(row[0])
+                    for oi in items_list:
+                        txt = oi if isinstance(oi, str) else oi.get("name", "") if isinstance(oi, dict) else str(oi)
+                        for pid, pname, _, _, _, _, _, _ in PRODUCTS:
+                            if pname.lower().split()[0] in txt.lower():
+                                conn.execute("UPDATE products SET stock=stock-1 WHERE id=?", (pid,))
+                    conn.commit()
+            except Exception as e:
+                print(f"stock error {e}")
+        else:
+            cur = conn.cursor()
+            cur.execute("UPDATE orders SET status='FAILED' WHERE checkout_id=?", (checkout_id,))
+            conn.commit()
+        return {"ResultCode": 0, "ResultDesc": "Accepted"}
+    except Exception as e:
+        print(f"callback error {e}")
+        return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 @app.get("/favicon.ico")
 def favicon():
     for f in ["logo.png", "static/logo.png"]:
         if os.path.exists(f):
             return FileResponse(f)
-    return HTMLResponse("", 404)
+    return HTMLResponse("", 200)
 
 HTML = """<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LONMA ORBIT</title><style>
 :root{--teal:#0A9EBB}*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#f7fbfc}
 .nav{position:fixed;top:0;width:100%;background:var(--teal);z-index:1000}
 .nav-top{padding:8px 12px;display:flex;justify-content:space-between;align-items:center;height:66px}
-.logo-circle{background:#0A9EBB;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(0,0,0,.25);overflow:hidden;border:2px solid #fff}
-.logo-circle img{height:52px;width:52px;object-fit:cover;border-radius:50%;background:#0A9EBB}
+.logo-circle{background:#0A9EBB;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid #fff}
+.logo-circle img{height:52px;width:52px;object-fit:cover;border-radius:50%}
 .search-bar-wrap{padding:0 12px 14px;background:var(--teal)}
-.search-app-bar{background:#fff;border-radius:16px;padding:0 16px;height:54px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.search-app-bar{background:#fff;border-radius:16px;padding:0 16px;height:54px;display:flex;align-items:center;gap:12px}
 .hamburger{color:var(--teal);font-size:28px;font-weight:bold;cursor:pointer}
 .search-app-bar input{border:none;outline:none;flex:1;font-size:16px;background:transparent}
 .cart-icon{position:relative;background:#fff;color:var(--teal);padding:9px 16px;border-radius:25px;font-weight:bold;cursor:pointer;font-size:13px}
@@ -67,36 +119,27 @@ input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px soli
 .qty-controls{display:flex;align-items:center;justify-content:space-between;background:#eef9fb;border-radius:25px;padding:5px 8px;margin-top:8px}
 .qty-btn{background:var(--teal);color:#fff;border:none;width:30px;height:30px;border-radius:50%;font-weight:bold;cursor:pointer}
 .promo{background:#fff;color:#0A9EBB;padding:10px;border-radius:12px;margin:8px 0;text-align:center;font-weight:bold;font-size:12px;border:1px solid #d0eef5}
-.side-menu{position:fixed;top:0;left:-285px;width:285px;height:100%;background:#fff;z-index:2000;transition:.3s;box-shadow:2px 0 12px rgba(0,0,0,.2)}.side-menu.open{left:0}.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1999}.overlay.open{display:block}
+.side-menu{position:fixed;top:0;left:-285px;width:285px;height:100%;background:#fff;z-index:2000;transition:.3s}.side-menu.open{left:0}.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1999}.overlay.open{display:block}
 .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:2000;align-items:center;justify-content:center;padding:12px}.modal.open{display:flex}.modal-box{background:#fff;border-radius:16px;max-width:420px;width:100%;max-height:92vh;overflow-y:auto}
+.status-badge{padding:3px 8px;border-radius:12px;font-size:10px;color:#fff}.status-Pending{background:#ff9a00}.status-PAID{background:#00c851}.status-Packing{background:#0A9EBB}.status-Transit{background:#6c5ce7}.status-Delivered{background:#2d3436}.status-FAILED{background:#ff3b30}
 </style></head><body>
-<div class="nav"><div class="nav-top"><div class="logo-circle"><img src="/logo.png" onerror="this.src='https://via.placeholder.com/200x200/0A9EBB/FFFFFF?text=LO'"></div><div style="display:flex;gap:8px;align-items:center"><div class="cart-icon" onclick="show('cart')">CART <span id="cartCount" class="cart-count" style="display:none">0</span></div><span onclick="show('login')" style="background:rgba(255,255,255,.25);color:#fff;padding:6px 10px;border-radius:20px;font-size:12px;cursor:pointer">Account</span></div></div><div class="search-bar-wrap"><div class="search-app-bar"><span class="hamburger" onclick="openSideMenu()">☰</span><input id="searchInput" placeholder="Search products" oninput="filterProducts()"><span style="color:#999;font-size:14px">Search</span></div></div></div>
+<div class="nav"><div class="nav-top"><div class="logo-circle"><img src="/logo.png"></div><div style="display:flex;gap:8px;align-items:center"><div class="cart-icon" onclick="show('cart')">CART <span id="cartCount" class="cart-count" style="display:none">0</span></div><span onclick="show('login')" style="background:rgba(255,255,255,.25);color:#fff;padding:6px 10px;border-radius:20px;font-size:12px;cursor:pointer">Account</span></div></div><div class="search-bar-wrap"><div class="search-app-bar"><span class="hamburger" onclick="openSideMenu()">☰</span><input id="searchInput" placeholder="Search products" oninput="filterProducts()"><span style="color:#999;font-size:14px">Search</span></div></div></div>
 <div class="overlay" id="overlay" onclick="closeSideMenu()"></div>
-<div class="side-menu" id="sideMenu"><div style="background:var(--teal);color:#fff;padding:20px;text-align:center"><div style="background:#0A9EBB;width:80px;height:80px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;border:2px solid #fff;overflow:hidden"><img src="/logo.png" style="height:76px;width:76px;object-fit:cover;border-radius:50%"></div><h3 style="margin:10px 0 0">LONMA ORBIT</h3><p style="margin:4px 0 0;font-size:11px;opacity:.9">100% Original Store</p></div><div style="padding:10px"><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('products');closeSideMenu()">Products</div><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('cart');closeSideMenu()">Cart (<span id="sideCartCount">0</span>)</div><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('orders');closeSideMenu()">Orders</div><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('scan');closeSideMenu()">Verify Code</div><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('settings');closeSideMenu()">Settings</div><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('login');closeSideMenu()">Account</div><div style="padding:14px;cursor:pointer" onclick="show('admin');closeSideMenu()">Admin</div></div></div>
+<div class="side-menu" id="sideMenu"><div style="background:var(--teal);color:#fff;padding:20px;text-align:center"><div style="background:#0A9EBB;width:80px;height:80px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;border:2px solid #fff;overflow:hidden"><img src="/logo.png" style="height:76px;width:76px;object-fit:cover;border-radius:50%"></div><h3 style="margin:10px 0 0">LONMA ORBIT</h3><p style="margin:4px 0 0;font-size:11px">100% Original Store</p></div><div style="padding:10px"><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('products');closeSideMenu()">Products</div><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('cart');closeSideMenu()">Cart (<span id="sideCartCount">0</span>)</div><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('orders');closeSideMenu()">Orders</div><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('scan');closeSideMenu()">Verify Code</div><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('settings');closeSideMenu()">Settings</div><div style="padding:14px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('login');closeSideMenu()">Account</div><div style="padding:14px;cursor:pointer" onclick="show('admin');closeSideMenu()">Admin</div></div></div>
 <div id="products" class="page active">
 <div class="promo">100% Original Verified - Same-Day Nairobi 2-3hrs - M-Pesa Secure - FREE Delivery over 2000</div>
 <div class="chips"><span class="chip active" onclick="filterCat('All',this)">All 9</span><span class="chip" onclick="filterCat('Cooking Oils',this)">Oils</span><span class="chip" onclick="filterCat('Soaps',this)">Soaps</span><span class="chip" onclick="filterCat('Lotions',this)">Lotions</span><span class="chip" onclick="filterCat('Pomades',this)">Pomades</span></div>
 <div class="grid" id="plist"></div>
-<div style="background:#fff;padding:14px;border-radius:16px;margin-top:16px;text-align:center;border:1px solid #eef2f7">
-<div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-<span style="background:#f0f9fb;color:#0A9EBB;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:bold;border:1px solid #d0eef5">Verified</span>
-<span style="background:#f0f9fb;color:#0A9EBB;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:bold;border:1px solid #d0eef5">Fast Delivery</span>
-<span style="background:#f0f9fb;color:#0A9EBB;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:bold;border:1px solid #d0eef5">Secure Payment</span>
-</div>
-<p style="font-size:11px;color:#888;margin:0">LONMA ORBIT - Trusted Store - CBD Moi Avenue - WhatsApp Support</p>
-</div>
-<div style="background:#0A9EBB;color:#fff;padding:14px;border-radius:16px;margin-top:8px;display:flex;justify-content:space-between;align-items:center">
-<div><p style="margin:0;font-weight:bold;font-size:13px">LONMA ORBIT</p><p style="margin:2px 0 0;font-size:11px;opacity:.9">2026 All rights reserved</p></div>
-<a href="https://wa.me/254700000000" target="_blank" style="background:#25D366;color:#fff;padding:8px 14px;border-radius:20px;font-size:11px;text-decoration:none;font-weight:bold">WhatsApp</a>
-</div>
+<div style="background:#fff;padding:14px;border-radius:16px;margin-top:16px;text-align:center;border:1px solid #eef2f7"><div style="display:flex;justify-content:center;gap:6px;margin-bottom:10px"><span style="background:#f0f9fb;color:#0A9EBB;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:bold;border:1px solid #d0eef5">Verified</span><span style="background:#f0f9fb;color:#0A9EBB;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:bold;border:1px solid #d0eef5">Fast Delivery</span><span style="background:#f0f9fb;color:#0A9EBB;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:bold;border:1px solid #d0eef5">Secure Payment</span></div><p style="font-size:11px;color:#888;margin:0">LONMA ORBIT - Trusted Store - CBD Moi Avenue - WhatsApp Support</p></div>
+<div style="background:#0A9EBB;color:#fff;padding:14px;border-radius:16px;margin-top:8px;display:flex;justify-content:space-between;align-items:center"><div><p style="margin:0;font-weight:bold;font-size:13px">LONMA ORBIT</p><p style="margin:2px 0 0;font-size:11px;opacity:.9">2026 All rights reserved</p></div><a href="https://wa.me/254700000000" target="_blank" style="background:#25D366;color:#fff;padding:8px 14px;border-radius:20px;font-size:11px;text-decoration:none;font-weight:bold">WhatsApp</a></div>
 </div>
 <div id="cart" class="page"><h2>My Cart</h2><div id="cartItems"></div><div class="card" id="cartSummary" style="display:none"><div style="font-size:13px;line-height:2"><div style="display:flex;justify-content:space-between"><span>Subtotal (<span id="totalItems">0</span>)</span><span>KSh <span id="subTotal">0</span></span></div><div style="display:flex;justify-content:space-between"><span>Delivery</span><span id="deliveryFee"></span></div><div style="display:flex;justify-content:space-between;border-top:1px solid #eee;margin-top:6px;padding-top:6px;font-weight:bold;font-size:16px;color:#0A9EBB"><span>Total</span><span>KSh <span id="totalPrice">0</span></span></div></div><div id="freeDeliveryMsg" style="background:#e8f5e9;color:#2e7d32;padding:8px;border-radius:8px;font-size:11px;margin-top:8px;text-align:center"></div><div style="background:#fff;border:1px solid #eee;padding:12px;border-radius:12px;margin-top:12px"><h4 style="margin:0 0 8px">Delivery Details</h4><input id="custName" placeholder="Full Name"><input id="phone" placeholder="M-Pesa 07xxxxxxxx"><select id="locationArea"><option value="">Select Area</option><option value="CBD">CBD - 150 (2-3hrs)</option><option value="Westlands">Westlands - 200 (3hrs)</option><option value="Eastlands">Eastlands - 200 (4hrs)</option><option value="Upcountry">Upcountry - 350 (24-48hrs)</option></select><textarea id="exactLocation" placeholder="Estate House No Landmark"></textarea><input id="promoCode" placeholder="Promo Code LONMA10"><label style="font-size:12px;display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="agreeTerms" style="width:auto"> I agree to Terms</label></div><div style="background:#fff;border:1px solid #eee;padding:12px;border-radius:12px;margin-top:12px"><button class="btn" style="background:#111" onclick="checkout()">PAY KSh <span id="payTotal">0</span> M-PESA</button><button class="btn" style="background:#25D366;margin-top:8px" onclick="orderWhatsApp()">ORDER VIA WHATSAPP</button><p id="paystatus" style="font-size:12px;margin-top:8px"></p></div><button class="btn" style="background:#fff;color:#0A9EBB;border:1px solid #0A9EBB;margin-top:8px" onclick="clearCart()">CLEAR CART</button></div><div class="card" id="emptyCart" style="text-align:center;padding:30px"><h3>Cart Empty</h3><button class="btn" onclick="show('products')">START SHOPPING</button></div></div>
-<div id="orders" class="page"><h2>My Orders</h2><div id="ordersList"></div><div class="card" id="noOrders" style="text-align:center;padding:30px"><h3>No orders yet</h3><button class="btn" onclick="show('products')">Shop Now</button></div></div>
+<div id="orders" class="page"><h2>My Orders</h2><div style="display:flex;gap:6px;margin-bottom:8px"><input id="orderPhoneLookup" placeholder="Enter M-Pesa phone to load orders"><button class="btn" style="width:auto;padding:8px 16px" onclick="loadMyOrdersByPhone()">Load</button></div><div id="ordersList"></div><div class="card" id="noOrders" style="text-align:center;padding:30px"><h3>No orders yet</h3><button class="btn" onclick="show('products')">Shop Now</button></div></div>
 <div id="scan" class="page"><h2>Verify Original</h2><div class="card"><input id="manualcode" placeholder="LONMA-001"><button class="btn" onclick="verifyCode()">VERIFY CODE</button><p id="scanresult" style="font-weight:bold;margin-top:10px"></p></div></div>
-<div id="settings" class="page"><h2>Settings</h2><div class="card"><h4 style="margin:0 0 12px">Preferences</h4><p style="font-size:11px;font-weight:bold;margin:8px 0 4px">Language</p><select id="prefLang" onchange="savePrefs()"><option value="en">English</option><option value="sw">Kiswahili</option></select><p style="font-size:11px;font-weight:bold;margin:12px 0 4px">Notifications</p><label style="font-size:12px;display:flex;gap:8px;margin:6px 0"><input type="checkbox" id="prefNotif" style="width:auto" onchange="savePrefs()"> Order updates</label><label style="font-size:12px;display:flex;gap:8px;margin:6px 0"><input type="checkbox" id="prefPromo" style="width:auto" onchange="savePrefs()"> Promo offers</label><p style="font-size:11px;font-weight:bold;margin:12px 0 4px">Default Area</p><select id="prefArea" onchange="savePrefs()"><option value="">Select</option><option value="CBD">CBD - 150</option><option value="Westlands">Westlands - 200</option><option value="Eastlands">Eastlands - 200</option><option value="Upcountry">Upcountry - 350</option></select><p style="font-size:11px;font-weight:bold;margin:12px 0 4px">Theme</p><select id="prefTheme" onchange="savePrefs()"><option value="light">Light</option><option value="dark">Dark</option></select><button class="btn" style="margin-top:12px" onclick="savePrefs()">SAVE</button><p id="prefStatus" style="font-size:12px;color:#00c851;margin-top:8px"></p></div><div class="card"><h4>Data</h4><button class="btn" style="background:#666" onclick="clearPrefs()">Clear Preferences</button><button class="btn" style="background:#ff4444;margin-top:8px" onclick="clearAllData()">Clear All Data</button></div></div>
-<div id="login" class="page"><h2>Account</h2><div class="card"><input id="lemail" placeholder="Email"><input id="lpass" type="password" placeholder="Password"><button class="btn" onclick="login()">Log In</button><p id="lstatus"></p><button class="btn" style="background:#fff;color:#0A9EBB;border:1px solid #0A9EBB;margin-top:8px" onclick="show('settings')">Settings</button></div></div>
-<div id="admin" class="page"><h2>Admin</h2><div class="card"><input id="adminPass" type="password" placeholder="lonma2024"><button class="btn" onclick="adminLogin()">Login</button><p id="adminStatus"></p></div><div id="adminContent" style="display:none"><div class="card"><p>Orders <span id="statOrders">0</span> Sales <span id="statSales">0</span></p><button class="btn" onclick="loadAdminOrders()">Refresh</button></div><div id="adminOrdersList"></div></div></div>
-<div id="receipt" class="page"><h2>Receipt</h2><div class="card" id="receiptContent"></div><button class="btn" onclick="show('products')">Continue Shopping</button></div>
+<div id="settings" class="page"><h2>Settings</h2><div class="card"><h4 style="margin:0 0 12px">Preferences</h4><select id="prefLang" onchange="savePrefs()"><option value="en">English</option><option value="sw">Kiswahili</option></select><label style="font-size:12px;display:flex;gap:8px;margin:6px 0"><input type="checkbox" id="prefNotif" style="width:auto" onchange="savePrefs()"> Order updates</label><label style="font-size:12px;display:flex;gap:8px;margin:6px 0"><input type="checkbox" id="prefPromo" style="width:auto" onchange="savePrefs()"> Promo offers</label><select id="prefArea" onchange="savePrefs()"><option value="">Default Area</option><option value="CBD">CBD - 150</option><option value="Westlands">Westlands - 200</option><option value="Eastlands">Eastlands - 200</option><option value="Upcountry">Upcountry - 350</option></select><select id="prefTheme" onchange="savePrefs()"><option value="light">Light</option><option value="dark">Dark</option></select><button class="btn" style="margin-top:12px" onclick="savePrefs()">SAVE</button><p id="prefStatus" style="font-size:12px;color:#00c851;margin-top:8px"></p></div><div class="card"><button class="btn" style="background:#666" onclick="clearPrefs()">Clear Preferences</button><button class="btn" style="background:#ff4444;margin-top:8px" onclick="clearAllData()">Clear All Data</button></div></div>
+<div id="login" class="page"><h2>Account</h2><div class="card"><input id="lemail" placeholder="Email"><input id="lpass" type="password" placeholder="Password"><button class="btn" onclick="login()">Log In</button><p id="lstatus"></p></div></div>
+<div id="admin" class="page"><h2>Admin</h2><div class="card"><input id="adminPass" type="password" placeholder="lonma2024"><button class="btn" onclick="adminLogin()">Login</button><p id="adminStatus"></p></div><div id="adminContent" style="display:none"><div class="card"><p>Orders <span id="statOrders">0</span> Sales KSh <span id="statSales">0</span></p><button class="btn" onclick="loadAdminOrders()">Refresh Orders</button></div><div id="adminOrdersList"></div></div></div>
+<div id="receipt" class="page"><h2>Receipt</h2><div class="card" id="receiptContent"></div><button class="btn" onclick="show('products')">Continue Shopping</button><button class="btn" style="background:#fff;color:#0A9EBB;border:1px solid #0A9EBB;margin-top:8px" onclick="window.print()">Print Receipt</button></div>
 <div class="bottom"><div id="b-products" class="active" onclick="show('products')">Products</div><div id="b-cart" onclick="show('cart')">Cart (<span id="bottomCartCount">0</span>)</div><div id="b-orders" onclick="show('orders')">Orders</div><div id="b-settings" onclick="show('settings')">Settings</div><div id="b-login" onclick="show('login')">Account</div></div>
 <div id="productModal" class="modal" onclick="if(event.target===this)closeModal()"><div class="modal-box"><div id="modalContent"></div></div></div>
 <script>
@@ -110,26 +153,28 @@ function closeSideMenu(){document.getElementById('sideMenu').classList.remove('o
 function filterCat(cat,el){currentCat=cat;document.querySelectorAll('.chip').forEach(ch=>ch.classList.remove('active'));if(el)el.classList.add('active');renderProducts();}
 function filterProducts(){searchQuery=document.getElementById('searchInput').value.toLowerCase();renderProducts();}
 function renderProducts(){let list=allProducts.filter(p=>{let mCat=currentCat==='All'||p.category===currentCat;let mSearch=!searchQuery||p.name.toLowerCase().includes(searchQuery);return mCat&&mSearch;});let html='';for(let p of list){let inCart=cart.find(c=>c.id===p.id);let qtyText=inCart?`In cart: ${inCart.qty}`:'';let img=p.image||safeImage(p.name);let stockColor=p.stock>20?'#00c851':p.stock>5?'#ff9a00':'#ff3b30';let stockText=p.stock>20?`In Stock`:p.stock>0?`Low`: `Out`;html+=`<div class="card"><span style="position:absolute;top:8px;left:8px;background:${stockColor};color:#fff;padding:3px 8px;border-radius:12px;font-size:10px">${stockText}</span><img src="${img}" onclick="openModal(${p.id})"><span style="background:#e0f7fa;color:#0A9EBB;padding:2px 8px;border-radius:10px;font-size:10px">${p.category}</span><h4 style="font-size:12px;margin:6px 0">${p.name}</h4><p style="margin:0;font-weight:bold;color:#0A9EBB">KSh ${p.price}</p><small style="background:#0A9EBB;color:#fff;padding:2px 6px;border-radius:10px;font-size:10px">${p.code}</small><button class="btn" onclick="addToCart(${p.id})">ADD TO CART</button><div style="font-size:11px;color:#0A9EBB;text-align:center;font-weight:bold;min-height:14px;margin-top:4px">${qtyText}</div></div>`;}document.getElementById('plist').innerHTML=html;}
-function openModal(id){let p=allProducts.find(x=>x.id===id);if(!p)return;document.getElementById('modalContent').innerHTML=`<img src="${p.image}" style="width:100%;height:260px;object-fit:contain;padding:12px"><div style="padding:12px"><h3>${p.name}</h3><p style="color:#0A9EBB;font-weight:bold;font-size:20px">KSh ${p.price}</p><p style="font-size:13px">${p.desc}</p><button class="btn" onclick="addToCart(${p.id});closeModal()">ADD TO CART</button><button class="btn" style="background:#fff;color:#0A9EBB;border:1px solid #0A9EBB;margin-top:8px" onclick="closeModal()">Close</button></div>`;document.getElementById('productModal').classList.add('open');}
+function openModal(id){let p=allProducts.find(x=>x.id===id);if(!p)return;document.getElementById('modalContent').innerHTML=`<img src="${p.image}" style="width:100%;height:260px;object-fit:contain;padding:12px"><div style="padding:12px"><h3>${p.name}</h3><p style="color:#0A9EBB;font-weight:bold;font-size:20px">KSh ${p.price}</p><p style="font-size:13px">${p.desc}</p><p style="font-size:12px;color:#666">Stock: ${p.stock}</p><button class="btn" onclick="addToCart(${p.id});closeModal()">ADD TO CART</button><button class="btn" style="background:#fff;color:#0A9EBB;border:1px solid #0A9EBB;margin-top:8px" onclick="closeModal()">Close</button></div>`;document.getElementById('productModal').classList.add('open');}
 function closeModal(){document.getElementById('productModal').classList.remove('open');}
 function addToCart(id){let p=allProducts.find(x=>x.id===id);if(!p)return;let found=cart.find(c=>c.id===id);if(found){found.qty++;}else{cart.push({id:p.id,name:p.name,price:p.price,image:p.image,code:p.code,qty:1});}saveCart();renderCart();renderProducts();}
 function changeQty(id,delta){for(let i=0;i<cart.length;i++)if(cart[i].id===id){cart[i].qty+=delta;if(cart[i].qty<=0)cart.splice(i,1);break;}saveCart();renderCart();renderProducts();}
 function clearCart(){cart=[];localStorage.removeItem('lonma_cart');saveCart();renderCart();renderProducts();}
-function renderCart(){let cont=document.getElementById('cartItems'),sum=document.getElementById('cartSummary'),empty=document.getElementById('emptyCart');if(cart.length===0){cont.innerHTML='';sum.style.display='none';empty.style.display='block';return;}empty.style.display='none';sum.style.display='block';let totalItems=0,subTotal=0,html='';for(let it of cart){totalItems+=it.qty;subTotal+=it.price*it.qty;html+=`<div class="card" style="display:flex;gap:10px"><img src="${it.image}" style="width:60px;height:60px;object-fit:contain"><div style="flex:1"><h4 style="margin:0;font-size:13px">${it.name}</h4><p>KSh ${it.price} x ${it.qty}</p><div class="qty-controls"><button class="qty-btn" onclick="changeQty(${it.id},-1)">-</button><span>${it.qty}</span><button class="qty-btn" onclick="changeQty(${it.id},1)">+</button></div></div></div>`;}cont.innerHTML=html;let area=document.getElementById('locationArea').value;let delivery=area==='CBD'?150:area==='Upcountry'?350:200;if(subTotal>=2000)delivery=0;document.getElementById('subTotal').innerText=subTotal;document.getElementById('totalItems').innerText=totalItems;document.getElementById('deliveryFee').innerText=delivery===0?'FREE':'KSh '+delivery;let total=subTotal+delivery;document.getElementById('totalPrice').innerText=total;document.getElementById('payTotal').innerText=total;document.getElementById('freeDeliveryMsg').innerHTML=subTotal>=2000?'FREE delivery':'Add '+(2000-subTotal)+' for FREE';}
+function renderCart(){let cont=document.getElementById('cartItems'),sum=document.getElementById('cartSummary'),empty=document.getElementById('emptyCart');if(cart.length===0){cont.innerHTML='';sum.style.display='none';empty.style.display='block';return;}empty.style.display='none';sum.style.display='block';let totalItems=0,subTotal=0,html='';for(let it of cart){totalItems+=it.qty;subTotal+=it.price*it.qty;html+=`<div class="card" style="display:flex;gap:10px"><img src="${it.image}" style="width:60px;height:60px;object-fit:contain"><div style="flex:1"><h4 style="margin:0;font-size:13px">${it.name}</h4><p>KSh ${it.price} x ${it.qty}</p><div class="qty-controls"><button class="qty-btn" onclick="changeQty(${it.id},-1)">-</button><span>${it.qty}</span><button class="qty-btn" onclick="changeQty(${it.id},1)">+</button></div></div></div>`;}cont.innerHTML=html;let area=document.getElementById('locationArea').value;let delivery=area==='CBD'?150:area==='Upcountry'?350:200;if(subTotal>=2000)delivery=0;document.getElementById('subTotal').innerText=subTotal;document.getElementById('totalItems').innerText=totalItems;document.getElementById('deliveryFee').innerText=delivery===0?'FREE':'KSh '+delivery;let total=subTotal+delivery;document.getElementById('totalPrice').innerText=total;document.getElementById('payTotal').innerText=total;document.getElementById('freeDeliveryMsg').innerHTML=subTotal>=2000?'FREE delivery unlocked':'Add '+(2000-subTotal)+' for FREE delivery';}
 document.getElementById('locationArea')?.addEventListener('change',renderCart);
 function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.bottom div').forEach(b=>b.classList.remove('active'));let btn=document.getElementById('b-'+id);if(btn)btn.classList.add('active');if(id==='cart')renderCart();if(id==='orders')renderOrders();if(id==='settings')loadPrefs();closeSideMenu();window.scrollTo(0,0);}
 async function loadProducts(){let r=await fetch('/api/products');let d=await r.json();allProducts=d;renderProducts();}
-async function verifyCode(){let c=document.getElementById('manualcode').value.trim().toUpperCase();let r=await fetch(`/api/verify/${c}`);let d=await r.json();document.getElementById('scanresult').innerHTML=d.valid?`OK ${d.product.name}`:`Invalid`;}
+async function verifyCode(){let c=document.getElementById('manualcode').value.trim().toUpperCase();let r=await fetch(`/api/verify/${c}`);let d=await r.json();document.getElementById('scanresult').innerHTML=d.valid?`Valid ${d.product.name}`:`Invalid code`;}
 async function login(){let r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('lemail').value,password:document.getElementById('lpass').value})});let d=await r.json();document.getElementById('lstatus').innerText=d.message;}
-function orderWhatsApp(){let total=document.getElementById('totalPrice').innerText;let items=cart.map(c=>`${c.name} x${c.qty}`).join(', ');window.open(`https://wa.me/254700000000?text=${encodeURIComponent('Hi LONMA '+items+' KSh '+total)}`,'_blank');}
-async function checkout(){let name=document.getElementById('custName').value.trim(),phone=document.getElementById('phone').value.trim(),area=document.getElementById('locationArea').value,loc=document.getElementById('exactLocation').value.trim(),agree=document.getElementById('agreeTerms').checked;if(!name||!phone||!area||!loc||!agree){document.getElementById('paystatus').innerText='Fill all';return;}let sub=0;for(let i of cart)sub+=i.price*i.qty;let del=area==='CBD'?150:350;if(sub>=2000)del=0;let tot=sub+del;let r=await fetch('/mpesa/stkpush',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount:tot,cart,name,area,location:loc,subtotal:sub,delivery:del})});let d=await r.json();document.getElementById('paystatus').innerText=d.message;let orderNo='LONMA'+Date.now().toString().slice(-6);myOrders.unshift({order_no:orderNo,items:[...cart],total:tot,status:'Pending',created:new Date().toLocaleString()});localStorage.setItem('my_orders',JSON.stringify(myOrders));cart=[];localStorage.removeItem('lonma_cart');saveCart();setTimeout(()=>show('receipt'),800);}
-function renderOrders(){let cont=document.getElementById('ordersList'),empty=document.getElementById('noOrders');if(myOrders.length===0){cont.innerHTML='';empty.style.display='block';return;}empty.style.display='none';let html='';for(let o of myOrders){html+=`<div class="card"><b>${o.order_no}</b> KSh ${o.total}</div>`;}cont.innerHTML=html;}
-async function adminLogin(){let p=document.getElementById('adminPass').value;if(p!=='lonma2024'){document.getElementById('adminStatus').innerText='Wrong';return;}document.getElementById('adminContent').style.display='block';loadAdminOrders();}
-async function loadAdminOrders(){let r=await fetch('/api/admin/orders');let d=await r.json();document.getElementById('statOrders').innerText=d.length;let sales=0;for(let o of d)sales+=o.total||0;document.getElementById('statSales').innerText=sales;}
+function orderWhatsApp(){let total=document.getElementById('totalPrice').innerText;let name=document.getElementById('custName').value;let area=document.getElementById('locationArea').value;let loc=document.getElementById('exactLocation').value;let phone=document.getElementById('phone').value;let items=cart.map(c=>`${c.name} x${c.qty} KSh ${c.price*c.qty}`).join('%0A');let msg=`Hi LONMA ORBIT%0AName: ${name}%0APhone: ${phone}%0AArea: ${area}%0ALocation: ${loc}%0A%0AItems:%0A${items}%0A%0ATotal: KSh ${total}`;window.open(`https://wa.me/254700000000?text=${msg}`,'_blank');}
+async function checkout(){let name=document.getElementById('custName').value.trim(),phone=document.getElementById('phone').value.trim(),area=document.getElementById('locationArea').value,loc=document.getElementById('exactLocation').value.trim(),agree=document.getElementById('agreeTerms').checked;if(!name||!phone||!area||!loc||!agree){document.getElementById('paystatus').innerText='Fill all fields and agree terms';return;}let sub=0;for(let i of cart)sub+=i.price*i.qty;let del=area==='CBD'?150:area==='Upcountry'?350:200;if(sub>=2000)del=0;let tot=sub+del;document.getElementById('paystatus').innerText='Sending STK Push...';let r=await fetch('/mpesa/stkpush',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,amount:tot,cart,name,area,location:loc,subtotal:sub,delivery:del})});let d=await r.json();document.getElementById('paystatus').innerText=d.message;if(d.status==='ok'||d.message.includes('STK')||d.message.includes('saved')){let orderNo=d.order_no||'LONMA'+Date.now().toString().slice(-6);myOrders.unshift({order_no:orderNo,items:[...cart],total:tot,status:'Pending',created:new Date().toLocaleString()});localStorage.setItem('my_orders',JSON.stringify(myOrders));document.getElementById('receiptContent').innerHTML=`<h3>Order ${orderNo}</h3><p>Name: ${name}</p><p>Phone: ${phone}</p><p>Area: ${area}</p><p>Location: ${loc}</p><p>Total: KSh ${tot}</p><p>Status: Pending - Check phone for STK</p><hr>${cart.map(c=>`<p>${c.name} x${c.qty} = KSh ${c.price*c.qty}</p>`).join('')}`;cart=[];localStorage.removeItem('lonma_cart');saveCart();setTimeout(()=>show('receipt'),1000);}}
+async function loadMyOrdersByPhone(){let phone=document.getElementById('orderPhoneLookup').value.trim();if(!phone){renderOrders();return;}let r=await fetch(`/api/orders?phone=${phone}`);let data=await r.json();let cont=document.getElementById('ordersList'),empty=document.getElementById('noOrders');if(data.length===0){cont.innerHTML='<p>No orders found for this phone</p>';empty.style.display='none';return;}empty.style.display='none';let html='';for(let o of data){html+=`<div class="card"><div style="display:flex;justify-content:space-between"><b>${o.order_no}</b><span class="status-badge status-${o.status}">${o.status}</span></div><p>KSh ${o.total} - ${o.created}</p><p style="font-size:11px">${o.items}</p><p style="font-size:11px">${o.area} - ${o.location}</p></div>`;}cont.innerHTML=html;}
+function renderOrders(){let cont=document.getElementById('ordersList'),empty=document.getElementById('noOrders');if(myOrders.length===0){cont.innerHTML='';empty.style.display='block';return;}empty.style.display='none';let html='';for(let o of myOrders){html+=`<div class="card"><div style="display:flex;justify-content:space-between"><b>${o.order_no}</b><span class="status-badge status-${o.status}">${o.status}</span></div><p>KSh ${o.total} - ${o.created}</p></div>`;}cont.innerHTML=html;}
+async function adminLogin(){let p=document.getElementById('adminPass').value;if(p!=='lonma2024'){document.getElementById('adminStatus').innerText='Wrong password';return;}document.getElementById('adminContent').style.display='block';document.getElementById('adminStatus').innerText='Admin logged in';loadAdminOrders();}
+async function loadAdminOrders(){let r=await fetch('/api/admin/orders');let d=await r.json();document.getElementById('statOrders').innerText=d.length;let sales=0;for(let o of d)sales+=o.total||0;document.getElementById('statSales').innerText=sales;let html='';for(let o of d){html+=`<div class="card"><div style="display:flex;justify-content:space-between"><b>${o.order_no}</b><span class="status-badge status-${o.status}">${o.status}</span></div><p>${o.name} - ${o.phone}</p><p>KSh ${o.total} - ${o.area} - ${o.location}</p><p style="font-size:11px">${o.items}</p><p style="font-size:11px">${o.created} ${o.mpesa_receipt||''}</p><div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap"><button class="btn" style="width:auto;padding:6px 10px;font-size:11px" onclick="updateOrderStatus('${o.order_no}','Packing')">Packing</button><button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:#6c5ce7" onclick="updateOrderStatus('${o.order_no}','Transit')">Transit</button><button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:#2d3436" onclick="updateOrderStatus('${o.order_no}','Delivered')">Delivered</button><button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:#00c851" onclick="updateOrderStatus('${o.order_no}','PAID')">Mark PAID</button></div></div>`;}document.getElementById('adminOrdersList').innerHTML=html;}
+async function updateOrderStatus(order_no,status){let r=await fetch(`/api/admin/orders/${order_no}/${status}`,{method:'POST'});let d=await r.json();alert(d.message);loadAdminOrders();}
 function loadPrefs(){try{let p=JSON.parse(localStorage.getItem('lonma_prefs')||'{}');document.getElementById('prefLang').value=p.lang||'en';document.getElementById('prefNotif').checked=p.notif!==false;document.getElementById('prefPromo').checked=p.promo!==false;document.getElementById('prefArea').value=p.area||'';document.getElementById('prefTheme').value=p.theme||'light';}catch(e){}}
 function savePrefs(){let p={lang:document.getElementById('prefLang').value,notif:document.getElementById('prefNotif').checked,promo:document.getElementById('prefPromo').checked,area:document.getElementById('prefArea').value,theme:document.getElementById('prefTheme').value};localStorage.setItem('lonma_prefs',JSON.stringify(p));document.getElementById('prefStatus').innerText='Saved';setTimeout(()=>document.getElementById('prefStatus').innerText='',2000);}
 function clearPrefs(){localStorage.removeItem('lonma_prefs');loadPrefs();}
-function clearAllData(){if(confirm('Clear all?')){localStorage.clear();cart=[];myOrders=[];updateCartCount();renderCart();renderOrders();}}
+function clearAllData(){if(confirm('Clear all data?')){localStorage.clear();cart=[];myOrders=[];updateCartCount();renderCart();renderOrders();}}
 loadProducts();updateCartCount();renderCart();renderOrders();loadPrefs();
 </script></body></html>
 """
@@ -143,7 +188,7 @@ def logo():
     for f in ["logo.png", "static/logo.png"]:
         if os.path.exists(f):
             return FileResponse(f)
-    return HTMLResponse("logo", 404)
+    return HTMLResponse("", 200)
 
 @app.get("/api/products")
 def products():
@@ -158,11 +203,20 @@ def verify(code: str):
     row = cur.fetchone()
     return {"valid": True, "product": {"name": row[0]}} if row else {"valid": False}
 
+@app.get("/api/orders")
+def get_orders_by_phone(phone: str = ""):
+    cur = conn.cursor()
+    if phone:
+        cur.execute("SELECT order_no,name,phone,area,location,items,subtotal,delivery,total,status,created,mpesa_receipt FROM orders WHERE phone=? ORDER BY id DESC", (phone,))
+    else:
+        cur.execute("SELECT order_no,name,phone,area,location,items,subtotal,delivery,total,status,created,mpesa_receipt FROM orders ORDER BY id DESC LIMIT 50")
+    return [{"order_no": r[0], "name": r[1], "phone": r[2], "area": r[3], "location": r[4], "items": r[5], "subtotal": r[6], "delivery": r[7], "total": r[8], "status": r[9], "created": r[10], "mpesa_receipt": r[11]} for r in cur.fetchall()]
+
 @app.get("/api/admin/orders")
 def admin_orders():
     cur = conn.cursor()
-    cur.execute("SELECT order_no,name,phone,area,location,items,subtotal,delivery,total,status,created FROM orders ORDER BY id DESC")
-    return [{"order_no": r[0], "name": r[1], "phone": r[2], "area": r[3], "location": r[4], "items": r[5], "subtotal": r[6], "delivery": r[7], "total": r[8], "status": r[9], "created": r[10]} for r in cur.fetchall()]
+    cur.execute("SELECT order_no,name,phone,area,location,items,subtotal,delivery,total,status,created,mpesa_receipt,checkout_id FROM orders ORDER BY id DESC")
+    return [{"order_no": r[0], "name": r[1], "phone": r[2], "area": r[3], "location": r[4], "items": r[5], "subtotal": r[6], "delivery": r[7], "total": r[8], "status": r[9], "created": r[10], "mpesa_receipt": r[11], "checkout_id": r[12]} for r in cur.fetchall()]
 
 @app.post("/api/admin/orders/{order_no}/{status}")
 def admin_update(order_no: str, status: str):
@@ -191,11 +245,53 @@ async def login_api(req: Request):
 @app.post("/mpesa/stkpush")
 async def stk(req: Request):
     d = await req.json()
+    raw_phone = d.get('phone', '').strip()
+    phone_for_db = raw_phone
+    phone = raw_phone.replace(" ", "").replace("+254", "0").replace("+", "")
+    if phone.startswith("0"):
+        phone = "254" + phone[1:]
+    phone = "".join([c for c in phone if c.isdigit()])
+    amount = int(d.get('amount', 1))
     order_no = 'LONMA' + datetime.datetime.now().strftime("%H%M%S")
     items_text = json.dumps([f"{c.get('name')} x{c.get('qty')}" for c in d.get('cart', [])])
+    checkout_id_store = order_no
     try:
-        conn.execute("INSERT INTO orders (order_no,name,phone,area,location,items,subtotal,delivery,total,status,created) VALUES (?,?,?,?,?,?,?,?,?,?,?)", (order_no, d.get('name', 'Guest'), d.get('phone'), d.get('area'), d.get('location'), items_text, d.get('subtotal', 0), d.get('delivery', 0), d.get('amount', 0), 'Pending', datetime.datetime.now().strftime("%Y-%m-%d %H:%M")))
+        conn.execute("INSERT INTO orders (order_no,name,phone,area,location,items,subtotal,delivery,total,status,created,mpesa_receipt,checkout_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (order_no, d.get('name', 'Guest'), phone_for_db, d.get('area'), d.get('location'), items_text, d.get('subtotal', 0), d.get('delivery', 0), d.get('amount', 0), 'Pending', datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "", order_no))
         conn.commit()
     except Exception as e:
-        print(e)
-    return {"message": f"STK KSh {d.get('amount')} sent to {d.get('phone')} Order {order_no} saved"}
+        print(f"db error {e}")
+    if DARAJA_CONSUMER_KEY and DARAJA_CONSUMER_SECRET and DARAJA_PASSKEY:
+        token = get_daraja_token()
+        if token:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            password = base64.b64encode(f"{DARAJA_SHORTCODE}{DARAJA_PASSKEY}{timestamp}".encode()).decode()
+            payload = {
+                "BusinessShortCode": DARAJA_SHORTCODE,
+                "Password": password,
+                "Timestamp": timestamp,
+                "TransactionType": "CustomerPayBillOnline",
+                "Amount": amount,
+                "PartyA": phone,
+                "PartyB": DARAJA_SHORTCODE,
+                "PhoneNumber": phone,
+                "CallBackURL": DARAJA_CALLBACK_URL,
+                "AccountReference": order_no,
+                "TransactionDesc": f"LONMA {order_no}"
+            }
+            try:
+                base = "https://api.safaricom.co.ke" if USE_PRODUCTION else "https://sandbox.safaricom.co.ke"
+                r = requests.post(f"{base}/mpesa/stkpush/v1/processrequest", json=payload, headers={"Authorization": f"Bearer {token}"}, timeout=15)
+                res = r.json()
+                print(f"STK res {res}")
+                if res.get("ResponseCode") == "0":
+                    chk = res.get("CheckoutRequestID", order_no)
+                    cur = conn.cursor()
+                    cur.execute("UPDATE orders SET checkout_id=? WHERE order_no=?", (chk, order_no))
+                    conn.commit()
+                    return {"status": "ok", "message": f"STK Push sent to {phone_for_db} - Check phone", "order_no": order_no, "checkout_id": chk}
+                else:
+                    return {"status": "error", "message": res.get("errorMessage") or res.get("errorCode") or str(res), "order_no": order_no}
+            except Exception as e:
+                print(f"stk error {e}")
+                return {"status": "ok", "message": f"Order {order_no} saved - STK pending - {str(e)}", "order_no": order_no}
+    return {"status": "ok", "message": f"STK KSh {amount} Order {order_no} saved - Add Daraja keys in Render Env for real STK", "order_no": order_no}
