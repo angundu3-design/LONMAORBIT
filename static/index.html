@@ -1,73 +1,20 @@
-<div id="terms" class="page"><h2>Terms & Conditions</h2>
-<div class="card" style="text-align:left;font-size:13px;line-height:1.6;color:#000;max-height:70vh;overflow-y:auto">
-<h3 style="color:#0A9EBB;margin-top:0">LONMA ORBIT - Terms & Conditions</h3>
-<p><b>Last Updated: May 2026</b></p>
-
-<p><b>1. Introduction</b><br>Welcome to LONMA ORBIT (app.lonmaorbit.co.ke). By using our website, products, M-Pesa services, and QR verification, you agree to these Terms.</p>
-
-<p><b>2. Products & Authenticity</b><br>
-- All products are original LONMA ORBIT designs<br>
-- Each product has unique code LONMA-00X<br>
-- Verify via Scan tab - fake codes will show ❌ Invalid<br>
-- Images are illustrative, slight variation may occur</p>
-
-<p><b>3. Pricing & Payments</b><br>
-- Prices in KSh Kenyan Shillings<br>
-- M-Pesa is primary payment (Till/Paybill)<br>
-- STK Push sent to your 07xx number - enter PIN to complete<br>
-- M-Pesa charges apply per Safaricom rates<br>
-- No refunds after PIN entered unless defective</p>
-
-<p><b>4. Orders & Delivery</b><br>
-- Nairobi CBD: Same day if ordered before 3PM<br>
-- Outside Nairobi: 24-48hrs via courier<br>
-- Delivery fee separate (150-300 KSh)<br>
-- Customer must provide correct phone & location<br>
-- We are not liable for wrong address provided</p>
-
-<p><b>5. Returns & Exchange</b><br>
-- Return within 24hrs if size issue / defect<br>
-- Product must be unworn, tags intact<br>
-- Scan code must be valid<br>
-- No returns for customized items<br>
-- Contact via bot or +254 7xx xxx xxx</p>
-
-<p><b>6. User Accounts</b><br>
-- You must provide true email & name<br>
-- You are responsible for password security<br>
-- One account per email<br>
-- We may suspend accounts for fraud / abuse</p>
-
-<p><b>7. Code Scan & Verification</b><br>
-- Use camera to scan QR on product label<br>
-- Manual entry: LONMA-001 format<br>
-- Valid codes show product name<br>
-- Report fakes to us immediately</p>
-
-<p><b>8. Locations</b><br>
-- CBD - Moi Avenue, Nairobi<br>
-- Westlands - Westgate Mall<br>
-- Maps provided for directions<br>
-- Store hours 9AM-8PM Mon-Sat, 10AM-6PM Sun</p>
-
-<p><b>9. Privacy</b><br>
-- We collect email, phone, location for orders only<br>
-- No sharing with third parties<br>
-- M-Pesa data handled by Safaricom<br>
-- Cookies used for login only</p>
-
-<p><b>10. Limitation</b><br>
-- We are not liable for network delays, M-Pesa failures<br>
-- Max liability = product price paid<br>
-- Force majeure applies</p>
-
-<p><b>11. Changes</b><br>We may update Terms anytime. Continued use = acceptance.</p>
-
-<p><b>12. Contact</b><br>
-📍 Moi Avenue, Nairobi<br>
-📧 support@lonmaorbit.co.ke<br>
-📞 +254 7xx xxx xxx<br>
-💬 Use LO BOT on site</p>
-
-<button class="btn" onclick="show('products')">I AGREE - CONTINUE SHOPPING</button>
-</div></div>
+<div class="side-menu" id="sideMenu">
+  <div style="background:var(--teal);color:#fff;padding:18px;text-align:center">
+    <div style="background:#fff;width:70px;height:70px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer" onclick="show('products');closeSideMenu()">
+      <img src="/logo.png" style="height:64px;width:64px;object-fit:cover;border-radius:50%">
+    </div>
+    <h3 style="margin:8px 0 0">LONMA ORBIT</h3>
+    <p style="margin:2px 0 0;font-size:11px">100% LONMA Original</p>
+  </div>
+  <div style="padding:8px">
+    <div style="padding:12px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('products');closeSideMenu()">🏠 LONMA Products</div>
+    <div style="padding:12px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('cart');closeSideMenu()">🛒 Cart (<span id="sideCartCount">0</span>)</div>
+    <div style="padding:12px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('wishlist');closeSideMenu()">♡ Wishlist</div>
+    <div style="padding:12px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('friends');closeSideMenu()">👥 Friends & Meet</div>
+    <div style="padding:12px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('orders');closeSideMenu()">📦 Orders & Tracking</div>
+    <div style="padding:12px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('loyaltyPage');closeSideMenu()">⭐ Loyalty Points</div>
+    <div style="padding:12px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('scan');closeSideMenu()">✅ Verify LONMA Code</div>
+    <div style="padding:12px;border-bottom:1px solid #eee;cursor:pointer" onclick="show('settings');closeSideMenu()">⚙️ Settings</div>
+    <div style="padding:12px;cursor:pointer;background:#f0f9fb" onclick="show('admin');closeSideMenu()">🔐 Admin Analytics</div>
+  </div>
+</div>
